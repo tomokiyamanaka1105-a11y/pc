@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>PC物販管理</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:rgba(0,0,0,0)}
+:root{
+  --bg:#0d0d14;--bg2:#14141e;--bg3:#1c1c28;--bg4:#242432;
+  --border:#2a2a3a;--text:#eeeef6;--text2:#8888a8;--text3:#555575;
+  --accent:#00d4aa;--red:#ff4466;--amber:#ffaa00;--green:#00c87a;--purple:#9966ff;
+}
+html,body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans",sans-serif;font-size:14px;-webkit-text-size-adjust:100%}
+button,select,input,textarea{font-family:inherit;font-size:14px;-webkit-appearance:none;appearance:none;color:var(--text)}
+
+.topbar{background:var(--bg2);border-bottom:1px solid var(--border);padding:14px 16px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:200}
+.logo{width:34px;height:34px;background:var(--accent);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.topbar h1{font-size:15px;font-weight:700}
+.topbar-sub{font-size:11px;color:var(--text2)}
+.topbar-right{margin-left:auto;text-align:right}
+.remain{font-size:15px;font-weight:700;color:var(--accent)}
+.remain-lbl{font-size:10px;color:var(--text2)}
+
+.tabs{display:flex;background:var(--bg2);border-bottom:1px solid var(--border);overflow-x:auto;scrollbar-width:none;position:sticky;top:63px;z-index:199}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex-shrink:0;padding:12px 16px;font-size:12px;font-weight:600;color:var(--text2);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;min-height:44px;display:flex;align-items:center}
+.tab.on{color:var(--accent);border-bottom-color:var(--accent)}
+
+.panel{display:none;padding:14px 16px 80px}.panel.on{display:block}
+
+.metrics{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px}
+.kpi{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:12px 14px}
+.kpi .lbl{font-size:11px;color:var(--text2);margin-bottom:4px}
+.kpi .val{font-size:20px;font-weight:700;font-variant-numeric:tabular-nums}
+.kpi .sub{font-size:11px;color:var(--text2);margin-top:3px}
+.kpi.g .val{color:var(--green)}.kpi.a .val{color:var(--amber)}
+.prog{height:4px;background:var(--border);border-radius:2px;overflow:hidden;margin-top:7px}
+.prog-fill{height:100%;background:var(--accent);border-radius:2px}
+
+.sec-title{font-size:11px;font-weight:600;color:var(--text2);letter-spacing:.08em;text-transform:uppercase;margin:0 0 8px;display:flex;align-items:center;justify-content:space-between}
+.sec-btn{font-size:11px;font-weight:600;color:var(--accent);padding:4px 10px;border:1px solid var(--accent);border-radius:14px;cursor:pointer;letter-spacing:0;text-transform:none;white-space:nowrap}
+
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:10px}
+.row{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--border)}
+.row:last-child{border-bottom:none}
+.row .rl{font-size:12px;color:var(--text2)}.row .rv{font-size:12px;font-weight:500}
+
+/* パーツカード */
+.part{padding:11px 14px;border-bottom:1px solid var(--border)}
+.part:last-child{border-bottom:none}
+.part-top{display:flex;align-items:flex-start;gap:8px}
+.part-info{flex:1;min-width:0}
+.part-name{font-size:13px;font-weight:500;margin-bottom:4px}
+.part-sub{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.part-note{font-size:11px;color:var(--text2);margin-top:3px}
+.part-actions{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-top:8px}
+
+/* 案件カード */
+.ccase{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:10px}
+.ccase-head{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:7px}
+.ccase-title{font-size:13px;font-weight:600;line-height:1.4;flex:1}
+.chips{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px}
+.chip{font-size:10px;font-weight:600;padding:2px 7px;border-radius:3px;border:1px solid var(--border)}
+.ch-gpu{background:#00c87a18;color:#44ddaa;border-color:#00c87a40}
+.ch-cost{background:#ffaa0018;color:#ffcc66;border-color:#ffaa0040}
+.ch-sell{background:#0090ff18;color:#66bbff;border-color:#0090ff40}
+.ch-part{background:#9966ff18;color:#bb99ff;border-color:#9966ff40}
+.ccase-foot{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.p-pos{color:var(--green);font-size:14px;font-weight:700}
+.p-neg{color:var(--red);font-size:14px;font-weight:700}
+.p-na{color:var(--text2);font-size:12px}
+.ccase-actions{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.ccase-actions.three{grid-template-columns:1fr 1fr 1fr}
+
+/* バッジ */
+.badge{display:inline-flex;align-items:center;font-size:10px;font-weight:600;padding:3px 9px;border-radius:12px;white-space:nowrap}
+.b-bid{background:#ffaa0022;color:#ffcc66}
+.b-wait{background:#0090ff22;color:#66bbff}
+.b-stock{background:#00c87a22;color:#44ddaa}
+.b-used{background:#9966ff22;color:#bb99ff}
+.b-sold-p{background:#2a2a3a;color:#8888a8}
+.b-watch{background:#0090ff22;color:#66bbff}
+.b-buy{background:#ff990022;color:#ffbb55}
+.b-work{background:#9966ff22;color:#bb99ff}
+.b-list{background:#00c87a22;color:#44ddaa}
+.b-sold{background:#2a2a3a;color:#8888a8}
+.b-ok{background:#00c87a22;color:#44ddaa}
+.b-ng{background:#ff446622;color:#ff9999}
+.b-warn{background:#ffaa0022;color:#ffcc66}
+.b-info{background:#0090ff22;color:#66bbff}
+
+/* ボタン */
+.btn{display:flex;align-items:center;justify-content:center;padding:10px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:var(--bg3);color:var(--text);min-height:44px;-webkit-user-select:none;user-select:none;transition:opacity .1s;text-align:center;line-height:1.3}
+.btn:active{opacity:.65}
+.btn.primary{background:var(--accent);color:#000;border-color:var(--accent);font-size:14px;padding:13px}
+.btn.danger{border-color:#ff446644;color:var(--red)}
+.btn.accent{border-color:var(--accent);color:var(--accent)}
+.btn.full{width:100%}
+.btn.sm{font-size:11px;padding:7px 10px;min-height:36px}
+
+/* フォーム */
+.form-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:12px}
+.form-card h3{font-size:13px;font-weight:600;margin-bottom:14px;color:var(--text2)}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:12px;color:var(--text2);margin-bottom:6px}
+.field input,.field select,.field textarea{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;padding:11px 13px;outline:none}
+.field input:focus,.field textarea:focus{border-color:var(--accent)}
+.field select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%238888a8' d='M6 8L1 3h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px}
+.field textarea{height:68px;resize:vertical;font-family:inherit}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+/* チェックリスト */
+.checklist{list-style:none;padding:0}
+.checklist li{display:flex;align-items:flex-start;gap:9px;padding:9px 14px;border-bottom:1px solid var(--border);font-size:13px;line-height:1.5}
+.checklist li:last-child{border-bottom:none}
+.ci-ok{color:var(--green);flex-shrink:0;margin-top:1px}
+.ci-warn{color:var(--amber);flex-shrink:0;margin-top:1px}
+
+/* アラートカード */
+.alert-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:8px}
+.alert-kw{font-size:15px;font-weight:700;font-family:monospace;margin-bottom:5px}
+.alert-detail{font-size:12px;color:var(--text2);line-height:1.6}
+.insight{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:10px}
+.insight .h{font-size:12px;font-weight:700;color:var(--accent);margin-bottom:5px}
+.insight .b{font-size:12px;color:var(--text2);line-height:1.7}
+.insight .b b{color:var(--text)}
+
+.empty{padding:48px 20px;text-align:center;color:var(--text2)}
+.empty-icon{font-size:36px;margin-bottom:10px}
+.empty-txt{font-size:13px}
+.empty-sub{font-size:12px;color:var(--text3);margin-top:5px}
+
+/* モーダル */
+.mo{display:none;position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:500;align-items:flex-end;justify-content:center}
+.mo.on{display:flex}
+.mo-box{background:var(--bg2);border-radius:16px 16px 0 0;padding:16px 16px 40px;width:100%;max-height:88vh;overflow-y:auto}
+.mo-title{font-size:14px;font-weight:600;margin-bottom:14px;text-align:center;color:var(--text2)}
+.mo-opt{padding:15px 14px;border-bottom:1px solid var(--border);font-size:14px;cursor:pointer;text-align:center}
+.mo-opt:last-child{border-bottom:none}
+.mo-opt:active{background:var(--bg3)}
+.mo-opt.on{color:var(--accent);font-weight:700}
+.mo-cancel{margin-top:10px;background:var(--bg3);border-radius:10px;padding:15px;font-size:14px;font-weight:600;cursor:pointer;text-align:center;color:var(--text2)}
+.mo-cancel:active{opacity:.7}
+.mo-body{padding:4px 0 8px}
+
+/* 売却入力モーダル内フォーム */
+.mo-field{margin-bottom:12px}
+.mo-field label{display:block;font-size:12px;color:var(--text2);margin-bottom:5px}
+.mo-field input{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:16px;padding:11px 13px;outline:none}
+.mo-field input:focus{border-color:var(--accent)}
+
+/* タイムライン */
+.timeline{padding:4px 0}
+.tl-item{display:flex;gap:10px;padding:6px 14px}
+.tl-dot{width:8px;height:8px;border-radius:50%;background:var(--accent);flex-shrink:0;margin-top:5px}
+.tl-dot.gray{background:var(--text3)}
+.tl-content{flex:1;font-size:11px;color:var(--text2);line-height:1.5}
+.tl-content b{color:var(--text)}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo">📦</div>
+  <div><h1>PC物販管理</h1><div class="topbar-sub">中古デスクトップ転売</div></div>
+  <div class="topbar-right">
+    <div class="remain" id="hd-remain">¥—</div>
+    <div class="remain-lbl">軍資金残高</div>
+  </div>
+</div>
+
+<div class="tabs" id="tabs">
+  <div class="tab on"  data-panel="dash">ダッシュボード</div>
+  <div class="tab" data-panel="parts">パーツ管理</div>
+  <div class="tab" data-panel="cases">案件管理</div>
+  <div class="tab" data-panel="add-case">＋ 案件登録</div>
+  <div class="tab" data-panel="policy">仕入れ方針</div>
+  <div class="tab" data-panel="alert">アラート</div>
+</div>
+
+<!-- ダッシュボード -->
+<div id="p-dash" class="panel on">
+  <div class="metrics" id="metrics"></div>
+  <div class="sec-title">在庫パーツ <span class="sec-btn" onclick="swPanel('parts')">パーツ管理 →</span></div>
+  <div class="card" id="dash-parts"></div>
+  <div class="sec-title" style="margin-top:16px">進行中案件</div>
+  <div id="dash-cases"></div>
+</div>
+
+<!-- パーツ管理 -->
+<div id="p-parts" class="panel">
+  <div class="form-card">
+    <h3>＋ パーツを追加</h3>
+    <div class="field"><label>パーツ名</label><input id="p-name" type="text" placeholder="例：GTX 1660 Super GIGABYTE OC"></div>
+    <div class="form-row">
+      <div class="field"><label>仕入れ価格（円）</label><input id="p-cost" type="number" inputmode="numeric" placeholder="6000" min="0" value="0"></div>
+      <div class="field"><label>初期ステータス</label>
+        <select id="p-st">
+          <option value="bid">入札中</option>
+          <option value="wait">到着待ち</option>
+          <option value="stock">在庫あり</option>
+        </select>
+      </div>
+    </div>
+    <div class="field"><label>メモ</label><input id="p-note" type="text" placeholder="FFXVスコア6431・動作確認済み など"></div>
+    <div class="btn primary full" id="btn-add-part">追加する</div>
+  </div>
+  <div class="sec-title">パーツ一覧</div>
+  <div id="parts-list"></div>
+</div>
+
+<!-- 案件管理 -->
+<div id="p-cases" class="panel">
+  <div id="all-cases"></div>
+</div>
+
+<!-- 案件登録 -->
+<div id="p-add-case" class="panel">
+  <div class="form-card">
+    <div class="field"><label>商品名・型番</label><input id="f-title" type="text" placeholder="例：GALLERIA RM5C i5-9400F グラボなし"></div>
+    <div class="field"><label>ステータス</label>
+      <select id="f-status">
+        <option value="watch">監視中（入札検討）</option>
+        <option value="bid">入札中</option>
+        <option value="buy">仕入れ済み</option>
+        <option value="work">作業中</option>
+        <option value="list">出品中</option>
+        <option value="sold">売却済み</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <div class="field"><label>仕入れ価格（円）</label><input id="f-buy" type="number" inputmode="numeric" placeholder="12500" min="0"></div>
+      <div class="field"><label>送料込み（円）</label><input id="f-ship-buy" type="number" inputmode="numeric" placeholder="1500" min="0" value="0"></div>
+    </div>
+    <div class="form-row">
+      <div class="field"><label>売値（円）</label><input id="f-sell" type="number" inputmode="numeric" placeholder="42000" min="0" value="0"></div>
+      <div class="field"><label>手数料＋送料（円）</label><input id="f-fee" type="number" inputmode="numeric" value="5500" min="0"></div>
+    </div>
+    <div class="field"><label>メモ</label><textarea id="f-memo" placeholder="電源450W確認済み・メモリ増設必要 など"></textarea></div>
+    <div class="btn primary full" id="btn-add-case">登録する</div>
+  </div>
+</div>
+
+<!-- 仕入れ方針 -->
+<div id="p-policy" class="panel">
+  <div class="sec-title">基本方針（2026年6月版）</div>
+  <div class="card"><ul class="checklist">
+    <li><span class="ci-ok">✓</span><span>グラボなしベース機を安く仕入れ、GTX 1660 Sを差して完成品として売る</span></li>
+    <li><span class="ci-ok">✓</span><span>メモリは16GB必須。8GBなら増設してから出品（約2,000〜3,000円）</span></li>
+    <li><span class="ci-ok">✓</span><span>OS再インストール後、ベンチ実測値をタイトル1行目に記載</span></li>
+    <li><span class="ci-ok">✓</span><span>ブランドはGALLERIA・G-Tune・iiyama LEVEL∞のミドルタワー型に限定</span></li>
+    <li><span class="ci-warn">!</span><span>スリムタワー・省スペース型は電源容量不足リスクあり。原則スキップ</span></li>
+    <li><span class="ci-warn">!</span><span>CPU単体・マザーボード単体は今フェーズでは不要。見送る</span></li>
+  </ul></div>
+  <div class="sec-title" style="margin-top:16px">ターゲット価格帯</div>
+  <div class="card">
+    <div class="row"><span class="rl">ベース機 仕入れ上限</span><span class="rv">〜15,000円（送料込）</span></div>
+    <div class="row"><span class="rl">GTX 1660 S 仕入れ上限</span><span class="rv">〜9,000円（送料込）</span></div>
+    <div class="row"><span class="rl">メモリ増設コスト</span><span class="rv">2,000〜3,000円</span></div>
+    <div class="row"><span class="rl">総原価上限</span><span class="rv" style="color:var(--amber)">25,800円（送料込）</span></div>
+    <div class="row"><span class="rl">目標売値（中央値）</span><span class="rv">38,000〜43,000円</span></div>
+    <div class="row"><span class="rl">目標純利</span><span class="rv" style="color:var(--green)">8,000〜15,000円/台</span></div>
+  </div>
+  <div class="sec-title" style="margin-top:16px">ベース機 必須スペック</div>
+  <div class="card">
+    <div class="row"><span class="rl">CPU</span><span class="rv">i5-8400 / 9400F / 10400F</span></div>
+    <div class="row"><span class="rl">電源容量</span><span class="rv" style="color:var(--amber)">450W以上（必須）</span></div>
+    <div class="row"><span class="rl">フォームファクター</span><span class="rv">ミドルタワー型のみ</span></div>
+    <div class="row"><span class="rl">推奨ブランド</span><span class="rv">GALLERIA / G-Tune / iiyama</span></div>
+  </div>
+  <div class="sec-title" style="margin-top:16px">即決NGリスト</div>
+  <div class="card">
+    <div class="row"><span class="rl">スリムタワー・省スペース型</span><span class="badge b-ng">NG</span></div>
+    <div class="row"><span class="rl">電源300W以下</span><span class="badge b-ng">NG</span></div>
+    <div class="row"><span class="rl">第4〜6世代CPU</span><span class="badge b-ng">NG</span></div>
+    <div class="row"><span class="rl">ノートPC</span><span class="badge b-ng">NG</span></div>
+    <div class="row"><span class="rl">CPU・マザーボード単体</span><span class="badge b-warn">今は保留</span></div>
+  </div>
+</div>
+
+<!-- アラート -->
+<div id="p-alert" class="panel">
+  <div class="insight"><div class="h">グラボ先確保→ベース機の順番が安全</div><div class="b">グラボが手元にあれば「このケースに入るか」「電源は足りるか」を実物で確認してからベース機を入札できる。</div></div>
+  <div class="sec-title">ヤフオクアラート設定</div>
+  <div class="alert-card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px"><div class="alert-kw">GALLERIA i5</div><span class="badge b-ok">本命</span></div><div class="alert-detail">上限：22,000円 ／ ミドルタワー型 ／ 即時通知</div></div>
+  <div class="alert-card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px"><div class="alert-kw">ガレリア i5 デスクトップ</div><span class="badge b-ok">本命</span></div><div class="alert-detail">上限：22,000円 ／ 日本語補足</div></div>
+  <div class="alert-card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px"><div class="alert-kw">G-Tune i5 デスクトップ</div><span class="badge b-warn">対抗</span></div><div class="alert-detail">上限：22,000円 ／ 第4〜6世代混入注意</div></div>
+  <div class="alert-card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px"><div class="alert-kw">GTX 1660 Super 動作確認済</div><span class="badge b-info">グラボ補充</span></div><div class="alert-detail">上限：9,000円（送料込）／ FFXVベンチスコア付き優先</div></div>
+  <div class="sec-title" style="margin-top:16px">入札時チェックリスト</div>
+  <div class="card"><ul class="checklist">
+    <li><span class="ci-ok">✓</span><span>タイトルにi5-8/9/10世代の記載がある</span></li>
+    <li><span class="ci-ok">✓</span><span>動作確認済みの記載がある（ジャンクでも可）</span></li>
+    <li><span class="ci-ok">✓</span><span>出品者評価が概ね良好</span></li>
+    <li><span class="ci-ok">✓</span><span>内部写真でミドルタワー確認・PCIeスロット空き</span></li>
+    <li><span class="ci-warn">!</span><span>電源容量が450W以上と確認できる</span></li>
+  </ul></div>
+</div>
+
+<!-- ====== MODALS ====== -->
+
+<!-- パーツ ステータス変更 -->
+<div class="mo" id="mo-part-st" onclick="if(event.target===this)closeMo('mo-part-st')">
+  <div class="mo-box" onclick="event.stopPropagation()">
+    <div class="mo-title" id="mo-part-st-title">ステータスを変更</div>
+    <div id="mo-part-st-opts"></div>
+    <div class="mo-cancel" onclick="closeMo('mo-part-st')">キャンセル</div>
+  </div>
+</div>
+
+<!-- パーツ 案件に組み込む -->
+<div class="mo" id="mo-attach" onclick="if(event.target===this)closeMo('mo-attach')">
+  <div class="mo-box" onclick="event.stopPropagation()">
+    <div class="mo-title">どの案件に組み込む？</div>
+    <div id="mo-attach-opts"></div>
+    <div class="mo-cancel" onclick="closeMo('mo-attach')">キャンセル</div>
+  </div>
+</div>
+
+<!-- 案件 ステータス変更 -->
+<div class="mo" id="mo-case-st" onclick="if(event.target===this)closeMo('mo-case-st')">
+  <div class="mo-box" onclick="event.stopPropagation()">
+    <div class="mo-title" id="mo-case-st-title">ステータスを変更</div>
+    <div id="mo-case-st-opts"></div>
+    <div class="mo-cancel" onclick="closeMo('mo-case-st')">キャンセル</div>
+  </div>
+</div>
+
+<!-- 売却入力 -->
+<div class="mo" id="mo-sell" onclick="if(event.target===this)closeMo('mo-sell')">
+  <div class="mo-box" onclick="event.stopPropagation()">
+    <div class="mo-title">売却情報を入力</div>
+    <div class="mo-body">
+      <div class="mo-field"><label>売値（円）</label><input id="mo-sell-price" type="number" inputmode="numeric" placeholder="42000" min="0"></div>
+      <div class="mo-field"><label>手数料＋送料（円）</label><input id="mo-sell-fee" type="number" inputmode="numeric" value="5500" min="0"></div>
+      <div style="background:var(--bg3);border-radius:8px;padding:10px 12px;margin-bottom:14px">
+        <div style="font-size:11px;color:var(--text2);margin-bottom:4px">純利（自動計算）</div>
+        <div id="mo-sell-profit" style="font-size:20px;font-weight:700;color:var(--green)">—</div>
+      </div>
+      <div class="btn primary full" id="btn-confirm-sell">売却を記録する</div>
+    </div>
+    <div class="mo-cancel" onclick="closeMo('mo-sell')">キャンセル</div>
+  </div>
+</div>
+
+<!-- 削除確認 -->
+<div class="mo" id="mo-del" onclick="if(event.target===this)closeMo('mo-del')">
+  <div class="mo-box" onclick="event.stopPropagation()">
+    <div class="mo-title">削除しますか？</div>
+    <div id="mo-del-name" style="text-align:center;padding:8px 0 16px;font-size:13px;color:var(--text2)"></div>
+    <div class="btn danger full" id="btn-confirm-del">削除する</div>
+    <div class="mo-cancel" onclick="closeMo('mo-del')">キャンセル</div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// データ定義
+// ============================================================
+const BUDGET = 80000;
+
+const PART_ST = {
+  bid:  {label:'入札中',    cls:'b-bid'},
+  wait: {label:'到着待ち',  cls:'b-wait'},
+  stock:{label:'在庫あり',  cls:'b-stock'},
+  used: {label:'組込み済み',cls:'b-used'},
+  sold: {label:'単体売却済',cls:'b-sold-p'},
+};
+
+const CASE_ST = {
+  watch:{label:'監視中',  cls:'b-watch'},
+  bid:  {label:'入札中',  cls:'b-bid'},
+  buy:  {label:'仕入済',  cls:'b-buy'},
+  work: {label:'作業中',  cls:'b-work'},
+  list: {label:'出品中',  cls:'b-list'},
+  sold: {label:'売却済',  cls:'b-sold'},
+};
+
+// ============================================================
+// ストレージ
+// ============================================================
+function lp(){try{return JSON.parse(localStorage.getItem('pcm_parts'))||initParts()}catch(e){return initParts()}}
+function sp(d){try{localStorage.setItem('pcm_parts',JSON.stringify(d))}catch(e){}}
+function lc(){try{return JSON.parse(localStorage.getItem('pcm_cases'))||[]}catch(e){return[]}}
+function sc(d){try{localStorage.setItem('pcm_cases',JSON.stringify(d))}catch(e){}}
+
+function initParts(){
+  const parts=[
+    {id:uid(),name:'GTX 1660 Super（ジャンク）',cost:6000,status:'wait',note:'動作確認なし',caseId:null,log:[]},
+    {id:uid(),name:'GTX 1660 Super OC GIGABYTE',cost:0,status:'bid',note:'FFXVスコア6431確認済み・入札中上限6,350円',caseId:null,log:[]},
+    {id:uid(),name:'DDR4 16GB CORSAIR VENGEANCE',cost:3380,status:'wait',note:'動作確認済み 8GB×2',caseId:null,log:[]},
+  ];
+  sp(parts);return parts;
+}
+
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
+function yen(n){return n!=null?'¥'+Math.round(n).toLocaleString():'—'}
+function today(){return new Date().toLocaleDateString('ja-JP')}
+
+// 案件の総原価（ベース機 + 組み込みパーツ）
+function totalCost(c,parts){
+  const base=(c.buy||0)+(c.shipBuy||0);
+  const partsCost=parts.filter(p=>p.caseId===c.id).reduce((s,p)=>s+(p.cost||0),0);
+  return base+partsCost;
+}
+function profit(c,parts){
+  if(!c.sell)return null;
+  return c.sell-totalCost(c,parts)-(c.fee||5500);
+}
+
+// ============================================================
+// レンダリング
+// ============================================================
+function renderAll(){
+  const parts=lp(), cases=lc();
+
+  // 軍資金計算（入札中・到着待ち・在庫・組込み済みのパーツ + 仕入済以上の案件）
+  const partSpent=parts.filter(p=>p.status!=='sold').reduce((s,p)=>s+(p.cost||0),0);
+  const caseSpent=cases.filter(c=>['buy','work','list','sold'].includes(c.status)).reduce((s,c)=>s+(c.buy||0)+(c.shipBuy||0),0);
+  const spent=partSpent+caseSpent;
+  const remain=BUDGET-spent;
+  const totalProfit=cases.filter(c=>c.status==='sold').reduce((s,c)=>s+(profit(c,parts)||0),0);
+  const active=cases.filter(c=>!['sold'].includes(c.status)).length;
+  const pct=Math.min(100,Math.round(spent/BUDGET*100));
+
+  document.getElementById('hd-remain').textContent=yen(remain);
+  document.getElementById('metrics').innerHTML=`
+    <div class="kpi"><div class="lbl">軍資金残高</div><div class="val">${yen(remain)}</div><div class="sub">予算 ¥${BUDGET.toLocaleString()}</div><div class="prog"><div class="prog-fill" style="width:${pct}%"></div></div></div>
+    <div class="kpi g"><div class="lbl">確定利益（累計）</div><div class="val">${yen(totalProfit)}</div><div class="sub">売却済み</div></div>
+    <div class="kpi"><div class="lbl">進行中案件</div><div class="val">${active}件</div><div class="sub">仕入〜出品中</div></div>
+    <div class="kpi a"><div class="lbl">原価投下（累計）</div><div class="val">${yen(spent)}</div><div class="sub">パーツ含む</div></div>
+  `;
+
+  // ダッシュボード：在庫パーツ
+  const stockParts=parts.filter(p=>['bid','wait','stock'].includes(p.status));
+  document.getElementById('dash-parts').innerHTML=stockParts.length
+    ?stockParts.map(p=>partRow(p,parts,cases,false)).join('')
+    :'<div style="padding:14px;text-align:center;color:var(--text2);font-size:12px">在庫パーツなし</div>';
+
+  // ダッシュボード：進行中案件
+  const actCases=cases.filter(c=>c.status!=='sold');
+  document.getElementById('dash-cases').innerHTML=actCases.length
+    ?actCases.map(c=>caseCard(c,parts,cases,false)).join('')
+    :'<div class="empty"><div class="empty-icon">📋</div><div class="empty-txt">進行中の案件なし</div></div>';
+
+  // パーツ管理：全件
+  document.getElementById('parts-list').innerHTML=parts.length
+    ?`<div class="card">${parts.map(p=>partRow(p,parts,cases,true)).join('')}</div>`
+    :'<div class="empty"><div class="empty-icon">🔧</div><div class="empty-txt">パーツがありません</div></div>';
+
+  // 案件管理：全件
+  document.getElementById('all-cases').innerHTML=cases.length
+    ?cases.slice().reverse().map(c=>caseCard(c,parts,cases,true)).join('')
+    :'<div class="empty"><div class="empty-icon">📋</div><div class="empty-txt">案件がありません</div><div class="empty-sub">「＋ 案件登録」から追加できます</div></div>';
+}
+
+function partRow(p,parts,cases,full){
+  const st=PART_ST[p.status]||PART_ST.stock;
+  const attachedCase=p.caseId?cases.find(c=>c.id===p.caseId):null;
+  return`<div class="part">
+    <div class="part-top">
+      <div class="part-info">
+        <div class="part-name">${p.name}</div>
+        <div class="part-sub">
+          <span class="badge ${st.cls}">${st.label}</span>
+          ${p.cost?`<span style="font-size:11px;color:var(--text2)">${yen(p.cost)}</span>`:''}
+          ${attachedCase?`<span style="font-size:11px;color:var(--purple)">→ ${attachedCase.title.substring(0,14)}…</span>`:''}
+        </div>
+        ${p.note?`<div class="part-note">${p.note}</div>`:''}
+      </div>
+    </div>
+    ${full?`<div class="part-actions">
+      ${p.status==='bid'?`<div class="btn sm accent" onclick="quickPartSt('${p.id}','wait')">到着した</div>`:''}
+      ${p.status==='wait'?`<div class="btn sm accent" onclick="quickPartSt('${p.id}','stock')">在庫に追加</div>`:''}
+      ${p.status==='stock'?`<div class="btn sm" onclick="openAttach('${p.id}')">案件に組み込む</div>`:''}
+      ${p.status==='used'?`<div class="btn sm" style="color:var(--text2);font-size:10px;cursor:default">組込み済み</div>`:''}
+      <div class="btn sm" onclick="openPartSt('${p.id}')">ステータス変更</div>
+      <div class="btn sm danger" onclick="openDel('part','${p.id}')">削除</div>
+    </div>`:''}
+  </div>`;
+}
+
+function caseCard(c,parts,cases,full){
+  const st=CASE_ST[c.status]||CASE_ST.watch;
+  const tc=totalCost(c,parts);
+  const pr=profit(c,parts);
+  const attachedParts=parts.filter(p=>p.caseId===c.id);
+  return`<div class="ccase">
+    <div class="ccase-head">
+      <div class="ccase-title">${c.title}</div>
+      <span class="badge ${st.cls}">${st.label}</span>
+    </div>
+    <div class="chips">
+      ${c.buy?`<span class="chip ch-cost">ベース機 ${yen(c.buy+(c.shipBuy||0))}</span>`:''}
+      ${attachedParts.map(p=>`<span class="chip ch-part">${p.name.substring(0,12)} ${yen(p.cost)}</span>`).join('')}
+      ${tc?`<span class="chip ch-cost">総原価 ${yen(tc)}</span>`:''}
+      ${c.sell?`<span class="chip ch-sell">売値 ${yen(c.sell)}</span>`:''}
+    </div>
+    <div class="ccase-foot">
+      ${pr!==null?`<span class="${pr>=0?'p-pos':'p-neg'}">純利 ${yen(pr)}</span>`:`<span class="p-na">売値未確定</span>`}
+      ${c.soldDate?`<span style="font-size:11px;color:var(--text2)">${c.soldDate} 売却</span>`:''}
+    </div>
+    ${c.memo?`<div style="font-size:11px;color:var(--text2);margin-bottom:8px">${c.memo}</div>`:''}
+    ${full?`<div class="ccase-actions${c.status!=='sold'?' three':''}">
+      ${c.status!=='sold'?`<div class="btn sm" onclick="openCaseSt('${c.id}')">ステータス変更</div>`:''}
+      ${c.status==='list'?`<div class="btn sm accent" onclick="openSell('${c.id}')">売却を記録</div>`:''}
+      ${c.status!=='sold'&&c.status!=='list'?`<div class="btn sm accent" onclick="openSell('${c.id}')">売却を記録</div>`:''}
+      <div class="btn sm danger" onclick="openDel('case','${c.id}')">削除</div>
+    </div>`:''}
+  </div>`;
+}
+
+// ============================================================
+// パーツ操作
+// ============================================================
+document.getElementById('btn-add-part').addEventListener('click',function(){
+  const name=document.getElementById('p-name').value.trim();
+  if(!name){alert('パーツ名を入力してください');return;}
+  const parts=lp();
+  parts.push({
+    id:uid(),name,
+    cost:+document.getElementById('p-cost').value||0,
+    status:document.getElementById('p-st').value,
+    note:document.getElementById('p-note').value,
+    caseId:null,log:[{date:today(),action:'追加'}],
+  });
+  sp(parts);
+  document.getElementById('p-name').value='';
+  document.getElementById('p-cost').value='0';
+  document.getElementById('p-note').value='';
+  renderAll();
+});
+
+// ワンタップ ステータス変更（到着した・在庫追加）
+function quickPartSt(id,newSt){
+  const parts=lp();
+  const p=parts.find(p=>p.id===id);
+  if(!p)return;
+  const labels={wait:'到着待ちに変更',stock:'在庫に追加しました'};
+  p.status=newSt;
+  p.log=p.log||[];
+  p.log.push({date:today(),action:labels[newSt]||newSt});
+  sp(parts);renderAll();
+}
+
+// ステータス変更モーダル
+let _partStId=null;
+function openPartSt(id){
+  _partStId=id;
+  const parts=lp();const p=parts.find(p=>p.id===id);
+  document.getElementById('mo-part-st-title').textContent=p.name;
+  document.getElementById('mo-part-st-opts').innerHTML=
+    Object.entries(PART_ST).map(([k,v])=>`
+      <div class="mo-opt${p.status===k?' on':''}" onclick="setPartSt('${k}')">${v.label}</div>
+    `).join('');
+  openMo('mo-part-st');
+}
+function setPartSt(st){
+  const parts=lp();const p=parts.find(p=>p.id===_partStId);
+  if(!p)return;
+  p.status=st;
+  p.log=p.log||[];
+  p.log.push({date:today(),action:'ステータス→'+PART_ST[st].label});
+  // 使用済み以外は案件との紐付けを解除
+  if(st!=='used')p.caseId=null;
+  sp(parts);closeMo('mo-part-st');renderAll();
+}
+
+// 案件に組み込む
+let _attachPartId=null;
+function openAttach(partId){
+  _attachPartId=partId;
+  const cases=lc();
+  const available=cases.filter(c=>['buy','work','list'].includes(c.status));
+  if(!available.length){alert('組み込み先の案件がありません\n（仕入済・作業中・出品中の案件が必要です）');return;}
+  document.getElementById('mo-attach-opts').innerHTML=
+    available.map(c=>`<div class="mo-opt" onclick="attachPart('${c.id}')">${c.title}</div>`).join('');
+  openMo('mo-attach');
+}
+function attachPart(caseId){
+  const parts=lp();const cases=lc();
+  const p=parts.find(p=>p.id===_attachPartId);
+  const c=cases.find(c=>c.id===caseId);
+  if(!p||!c)return;
+  p.status='used';p.caseId=caseId;
+  p.log=p.log||[];
+  p.log.push({date:today(),action:'案件「'+c.title.substring(0,12)+'…」に組み込み'});
+  sp(parts);closeMo('mo-attach');renderAll();
+}
+
+// ============================================================
+// 案件操作
+// ============================================================
+document.getElementById('btn-add-case').addEventListener('click',function(){
+  const title=document.getElementById('f-title').value.trim();
+  if(!title){alert('商品名を入力してください');return;}
+  const cases=lc();
+  cases.push({
+    id:uid(),title,
+    status:document.getElementById('f-status').value,
+    buy:+document.getElementById('f-buy').value||0,
+    shipBuy:+document.getElementById('f-ship-buy').value||0,
+    sell:0,fee:+document.getElementById('f-fee').value||5500,
+    memo:document.getElementById('f-memo').value,
+    date:today(),soldDate:null,
+    log:[{date:today(),action:'案件登録'}],
+  });
+  sc(cases);
+  ['f-title','f-buy','f-memo'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('f-ship-buy').value='0';
+  document.getElementById('f-sell').value='0';
+  document.getElementById('f-fee').value='5500';
+  document.getElementById('f-status').value='watch';
+  swPanel('cases');renderAll();
+});
+
+// 案件ステータス変更
+let _caseStId=null;
+function openCaseSt(id){
+  _caseStId=id;
+  const cases=lc();const c=cases.find(c=>c.id===id);
+  document.getElementById('mo-case-st-title').textContent=c.title.substring(0,20);
+  document.getElementById('mo-case-st-opts').innerHTML=
+    Object.entries(CASE_ST).map(([k,v])=>`
+      <div class="mo-opt${c.status===k?' on':''}" onclick="setCaseSt('${k}')">${v.label}</div>
+    `).join('');
+  openMo('mo-case-st');
+}
+function setCaseSt(st){
+  const cases=lc();const c=cases.find(c=>c.id===_caseStId);
+  if(!c)return;
+  c.status=st;
+  c.log=c.log||[];
+  c.log.push({date:today(),action:'ステータス→'+CASE_ST[st].label});
+  sc(cases);closeMo('mo-case-st');renderAll();
+}
+
+// 売却記録モーダル
+let _sellCaseId=null;
+function openSell(id){
+  _sellCaseId=id;
+  const cases=lc();const c=cases.find(c=>c.id===id);
+  const parts=lp();
+  document.getElementById('mo-sell-price').value=c.sell||'';
+  document.getElementById('mo-sell-fee').value=c.fee||5500;
+  updateSellProfit(c,parts);
+  document.getElementById('mo-sell-price').oninput=()=>updateSellProfit(c,parts);
+  document.getElementById('mo-sell-fee').oninput=()=>updateSellProfit(c,parts);
+  openMo('mo-sell');
+}
+function updateSellProfit(c,parts){
+  const sell=+document.getElementById('mo-sell-price').value||0;
+  const fee=+document.getElementById('mo-sell-fee').value||0;
+  const tc=totalCost(c,parts);
+  const pr=sell-tc-fee;
+  const el=document.getElementById('mo-sell-profit');
+  el.textContent=sell?yen(pr):'—';
+  el.style.color=pr>=0?'var(--green)':'var(--red)';
+}
+document.getElementById('btn-confirm-sell').addEventListener('click',function(){
+  const sell=+document.getElementById('mo-sell-price').value;
+  if(!sell||sell<1){alert('売値を入力してください');return;}
+  const fee=+document.getElementById('mo-sell-fee').value||5500;
+  const cases=lc();const parts=lp();
+  const c=cases.find(c=>c.id===_sellCaseId);
+  if(!c)return;
+  c.sell=sell;c.fee=fee;c.status='sold';c.soldDate=today();
+  c.log=c.log||[];
+  c.log.push({date:today(),action:`売却 ${yen(sell)} / 純利 ${yen(sell-totalCost(c,parts)-fee)}`});
+  // 組み込みパーツを売却済みに
+  parts.filter(p=>p.caseId===c.id).forEach(p=>{
+    p.status='sold';
+    p.log=p.log||[];
+    p.log.push({date:today(),action:'案件売却により売却済みに'});
+  });
+  sc(cases);sp(parts);
+  closeMo('mo-sell');renderAll();
+});
+
+// 削除
+let _delType=null,_delId=null;
+function openDel(type,id){
+  _delType=type;_delId=id;
+  let name='';
+  if(type==='part'){const p=lp().find(p=>p.id===id);name=p?p.name:'このパーツ';}
+  else{const c=lc().find(c=>c.id===id);name=c?c.title:'この案件';}
+  document.getElementById('mo-del-name').textContent=name;
+  openMo('mo-del');
+}
+document.getElementById('btn-confirm-del').addEventListener('click',function(){
+  if(_delType==='part'){
+    const parts=lp();sp(parts.filter(p=>p.id!==_delId));
+  }else{
+    const cases=lc();const parts=lp();
+    // 案件削除時は紐付きパーツの caseId をリセット
+    parts.filter(p=>p.caseId===_delId).forEach(p=>{p.caseId=null;p.status='stock';});
+    sp(parts);sc(cases.filter(c=>c.id!==_delId));
+  }
+  closeMo('mo-del');renderAll();
+});
+
+// ============================================================
+// モーダル共通
+// ============================================================
+function openMo(id){document.getElementById(id).classList.add('on')}
+function closeMo(id){document.getElementById(id).classList.remove('on')}
+
+// ============================================================
+// タブ切り替え
+// ============================================================
+document.getElementById('tabs').addEventListener('click',function(e){
+  const t=e.target.closest('.tab');
+  if(t&&t.dataset.panel)swPanel(t.dataset.panel);
+});
+function swPanel(id){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on',t.dataset.panel===id));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('on',p.id==='p-'+id));
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+renderAll();
+</script>
+</body>
+</html>
