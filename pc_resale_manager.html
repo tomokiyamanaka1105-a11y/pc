@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>PC物販管理</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#0d0d14;--bg2:#14141e;--bg3:#1c1c28;--bg4:#242432;
+  --border:#2a2a3a;--text:#eeeef6;--text2:#8888a8;--text3:#555575;
+  --accent:#00d4aa;--accent2:#0090ff;--red:#ff4466;--amber:#ffaa00;--green:#00c87a;
+}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Yu Gothic",sans-serif;font-size:13px;min-height:100vh;padding-bottom:80px}
+
+.topbar{background:var(--bg2);border-bottom:1px solid var(--border);padding:14px 16px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:100}
+.logo{width:32px;height:32px;background:var(--accent);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.topbar-title{font-size:15px;font-weight:700;letter-spacing:-.3px}
+.topbar-sub{font-size:10px;color:var(--text2)}
+.topbar-right{margin-left:auto;text-align:right}
+.budget-remain{font-size:14px;font-weight:700;color:var(--accent)}
+.budget-label{font-size:10px;color:var(--text2)}
+
+.tab-bar{display:flex;background:var(--bg2);border-bottom:1px solid var(--border);overflow-x:auto;scrollbar-width:none;position:sticky;top:62px;z-index:99}
+.tab-bar::-webkit-scrollbar{display:none}
+.tab{flex-shrink:0;padding:11px 14px;font-size:11px;font-weight:600;color:var(--text2);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:all .15s}
+.tab.on{color:var(--accent);border-bottom-color:var(--accent)}
+
+.panel{display:none;padding:14px 16px}.panel.on{display:block}
+
+.metrics{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
+.metric{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:11px 13px}
+.metric .lbl{font-size:10px;color:var(--text2);margin-bottom:4px}
+.metric .val{font-size:20px;font-weight:700;font-variant-numeric:tabular-nums}
+.metric .sub{font-size:10px;color:var(--text2);margin-top:2px}
+.metric.g .val{color:var(--green)}
+.metric.a .val{color:var(--amber)}
+.progress{height:4px;background:var(--border);border-radius:2px;overflow:hidden;margin-top:6px}
+.progress-fill{height:100%;background:var(--accent);border-radius:2px}
+
+.section-title{font-size:10px;font-weight:600;color:var(--text2);letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px}
+
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:10px}
+.card-head{padding:10px 13px;border-bottom:1px solid var(--border);font-size:12px;font-weight:600;display:flex;align-items:center;gap:7px}
+
+.row{display:flex;align-items:center;justify-content:space-between;padding:8px 13px;border-bottom:1px solid var(--border)}
+.row:last-child{border-bottom:none}
+.row .lbl{font-size:12px;color:var(--text2)}
+.row .val{font-size:12px;font-weight:500}
+
+.part-item{padding:10px 13px;border-bottom:1px solid var(--border)}
+.part-item:last-child{border-bottom:none}
+.part-name{font-size:12px;font-weight:500;margin-bottom:3px}
+.part-meta{font-size:10px;color:var(--text2)}
+.part-cost{font-size:12px;font-weight:700;color:var(--accent)}
+
+.case-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:11px 13px;margin-bottom:8px}
+.case-title{font-size:12px;font-weight:600;margin-bottom:6px;line-height:1.4}
+.case-chips{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:7px}
+.chip{font-size:9px;font-weight:600;padding:2px 6px;border-radius:3px;border:1px solid var(--border)}
+.chip-gpu{background:#00c87a18;color:#44ddaa;border-color:#00c87a30}
+.chip-cost{background:#ffaa0018;color:#ffcc66;border-color:#ffaa0030}
+.chip-sell{background:#0090ff18;color:#66bbff;border-color:#0090ff30}
+.case-footer{display:flex;align-items:center;justify-content:space-between}
+.profit-pos{color:var(--green);font-weight:700;font-size:13px}
+.profit-neg{color:var(--red);font-weight:700;font-size:13px}
+.profit-na{color:var(--text2);font-size:12px}
+
+.badge{display:inline-flex;align-items:center;font-size:10px;font-weight:600;padding:3px 8px;border-radius:12px}
+.b-watch{background:#0090ff22;color:#66bbff}
+.b-bid{background:#ffaa0022;color:#ffcc66}
+.b-buy{background:#ff990022;color:#ffbb55}
+.b-work{background:#9966ff22;color:#bb99ff}
+.b-list{background:#00c87a22;color:#44ddaa}
+.b-sold{background:#2a2a3a;color:#8888a8}
+.b-ok{background:#00c87a22;color:#44ddaa}
+.b-ng{background:#ff446622;color:#ff9999}
+.b-warn{background:#ffaa0022;color:#ffcc66}
+
+.case-actions{display:flex;gap:6px;margin-top:8px}
+.btn-sm{flex:1;padding:7px;border-radius:7px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:var(--bg3);color:var(--text);text-align:center}
+.btn-sm.danger{border-color:#ff446644;color:var(--red)}
+
+.alert-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:11px 13px;margin-bottom:8px}
+.alert-kw{font-size:14px;font-weight:700;font-family:monospace;color:var(--text);margin-bottom:5px}
+.alert-detail{font-size:11px;color:var(--text2);line-height:1.6}
+
+.checklist{padding:0;list-style:none}
+.checklist li{display:flex;align-items:flex-start;gap:8px;padding:8px 13px;border-bottom:1px solid var(--border);font-size:12px;line-height:1.5}
+.checklist li:last-child{border-bottom:none}
+.ci-ok{color:var(--green);font-size:14px;flex-shrink:0;margin-top:1px}
+.ci-warn{color:var(--amber);font-size:14px;flex-shrink:0;margin-top:1px}
+
+.form-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px}
+.field{margin-bottom:12px}
+.field label{display:block;font-size:11px;color:var(--text2);margin-bottom:5px}
+.field input,.field select,.field textarea{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:7px;color:var(--text);font-size:13px;padding:9px 11px;outline:none;-webkit-appearance:none}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--accent)}
+.field textarea{height:64px;resize:vertical;font-family:inherit}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.btn-primary{width:100%;padding:12px;background:var(--accent);color:#000;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;margin-top:4px}
+
+.status-modal{background:var(--bg2);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:10px}
+.status-option{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .1s}
+.status-option:last-child{border-bottom:none}
+.status-option:active{background:var(--bg3)}
+
+.empty{padding:40px 20px;text-align:center;color:var(--text2)}
+.empty-icon{font-size:32px;margin-bottom:10px}
+
+.insight-box{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:11px 13px;margin-bottom:8px}
+.insight-box .h{font-size:11px;font-weight:700;color:var(--accent);margin-bottom:5px}
+.insight-box .b{font-size:12px;color:var(--text2);line-height:1.7}
+.insight-box .b b{color:var(--text)}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo">📦</div>
+  <div>
+    <div class="topbar-title">PC物販管理</div>
+    <div class="topbar-sub">中古デスクトップ転売</div>
+  </div>
+  <div class="topbar-right">
+    <div class="budget-remain" id="hd-remain">¥—</div>
+    <div class="budget-label">軍資金残高</div>
+  </div>
+</div>
+
+<div class="tab-bar">
+  <div class="tab on" onclick="sw('dash',this)">ダッシュボード</div>
+  <div class="tab" onclick="sw('cases',this)">案件管理</div>
+  <div class="tab" onclick="sw('add',this)">＋ 新規登録</div>
+  <div class="tab" onclick="sw('policy',this)">仕入れ方針</div>
+  <div class="tab" onclick="sw('alert',this)">アラート設定</div>
+</div>
+
+<!-- ダッシュボード -->
+<div id="p-dash" class="panel on">
+  <div class="metrics" id="metrics"></div>
+  <div class="section-title">手持ちパーツ</div>
+  <div class="card" id="parts-card"></div>
+  <div class="section-title" style="margin-top:14px">進行中案件</div>
+  <div id="active-cases"></div>
+</div>
+
+<!-- 案件管理 -->
+<div id="p-cases" class="panel">
+  <div id="all-cases"></div>
+</div>
+
+<!-- 新規登録 -->
+<div id="p-add" class="panel">
+  <div class="form-wrap">
+    <form id="form" onsubmit="addCase(event)">
+      <div class="field">
+        <label>商品名・型番</label>
+        <input id="f-title" type="text" placeholder="例：GALLERIA RM5C i5-9400F グラボなし" required>
+      </div>
+      <div class="field">
+        <label>ステータス</label>
+        <select id="f-status">
+          <option value="watch">監視中（入札検討）</option>
+          <option value="bid">入札中</option>
+          <option value="buy">仕入れ済み</option>
+          <option value="work">作業中</option>
+          <option value="list">出品中</option>
+          <option value="sold">売却済み</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <div class="field">
+          <label>仕入れ価格（円）</label>
+          <input id="f-buy" type="number" placeholder="12500" min="0" value="">
+        </div>
+        <div class="field">
+          <label>カスタムコスト（円）</label>
+          <input id="f-custom" type="number" placeholder="9500" min="0" value="0">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="field">
+          <label>売値（円）</label>
+          <input id="f-sell" type="number" placeholder="42000" min="0" value="0">
+        </div>
+        <div class="field">
+          <label>手数料＋送料（円）</label>
+          <input id="f-fee" type="number" placeholder="5500" min="0" value="5500">
+        </div>
+      </div>
+      <div class="field">
+        <label>GPU</label>
+        <select id="f-gpu">
+          <option value="">未定</option>
+          <option value="GTX 1660 Super">GTX 1660 Super</option>
+          <option value="GTX 1660 Ti">GTX 1660 Ti</option>
+          <option value="RTX 2060">RTX 2060</option>
+          <option value="RTX 3060">RTX 3060</option>
+          <option value="その他">その他</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>メモ（電源容量・注意点など）</label>
+        <textarea id="f-memo" placeholder="電源450W確認済み・メモリ16GB増設必要 など"></textarea>
+      </div>
+      <button type="submit" class="btn-primary">登録する</button>
+    </form>
+  </div>
+</div>
+
+<!-- 仕入れ方針 -->
+<div id="p-policy" class="panel">
+  <div class="section-title">基本方針（2026年6月版）</div>
+  <div class="card">
+    <ul class="checklist">
+      <li><span class="ci-ok">✓</span><span>グラボなしベース機を安く仕入れ、GTX 1660 Sを差して完成品として売る</span></li>
+      <li><span class="ci-ok">✓</span><span>メモリは16GB必須。8GBなら増設してから出品（コスト約2,000〜3,000円）</span></li>
+      <li><span class="ci-ok">✓</span><span>OS再インストール後、ベンチマーク実測値をタイトル1行目に記載</span></li>
+      <li><span class="ci-ok">✓</span><span>ブランドはGALLERIA・G-Tune・iiyama LEVEL∞のミドルタワー型に限定</span></li>
+      <li><span class="ci-warn">!</span><span>スリムタワー・省スペース型は電源容量不足リスクあり。原則スキップ</span></li>
+      <li><span class="ci-warn">!</span><span>CPU単体・マザーボード単体は今フェーズでは不要。見送る</span></li>
+    </ul>
+  </div>
+
+  <div class="section-title" style="margin-top:14px">ターゲット価格帯</div>
+  <div class="card">
+    <div class="row"><span class="lbl">ベース機 仕入れ上限</span><span class="val">〜15,000円（送料込）</span></div>
+    <div class="row"><span class="lbl">GTX 1660 S 仕入れ上限</span><span class="val">〜9,000円（送料込）</span></div>
+    <div class="row"><span class="lbl">メモリ増設コスト</span><span class="val">2,000〜3,000円</span></div>
+    <div class="row"><span class="lbl">総原価上限</span><span class="val" style="color:var(--amber)">25,800円（送料込）</span></div>
+    <div class="row"><span class="lbl">目標売値（中央値）</span><span class="val">38,000〜43,000円</span></div>
+    <div class="row"><span class="lbl">目標純利</span><span class="val" style="color:var(--green)">8,000〜15,000円/台</span></div>
+  </div>
+
+  <div class="section-title" style="margin-top:14px">ベース機 必須スペック</div>
+  <div class="card">
+    <div class="row"><span class="lbl">CPU</span><span class="val">i5-8400 / 9400F / 10400F</span></div>
+    <div class="row"><span class="lbl">ソケット</span><span class="val">LGA1151 / LGA1200</span></div>
+    <div class="row"><span class="lbl">電源容量</span><span class="val" style="color:var(--amber)">450W以上（必須）</span></div>
+    <div class="row"><span class="lbl">フォームファクター</span><span class="val">ミドルタワー型のみ</span></div>
+    <div class="row"><span class="lbl">推奨ブランド</span><span class="val">GALLERIA / G-Tune / iiyama</span></div>
+    <div class="row"><span class="lbl">PCIe空きスロット</span><span class="val">写真で確認必須</span></div>
+  </div>
+
+  <div class="section-title" style="margin-top:14px">作業フロー目安時間</div>
+  <div class="card">
+    <div class="row"><span class="lbl">① 検品・目視確認</span><span class="val">15分</span></div>
+    <div class="row"><span class="lbl">② グラボ・メモリ組み込み</span><span class="val">30分</span></div>
+    <div class="row"><span class="lbl">③ OS再インストール</span><span class="val">45〜60分</span></div>
+    <div class="row"><span class="lbl">④ ドライバー＋ベンチ計測</span><span class="val">20分</span></div>
+    <div class="row"><span class="lbl">⑤ 清掃・撮影</span><span class="val">30〜45分</span></div>
+    <div class="row"><span class="lbl">⑥ 出品</span><span class="val">20分</span></div>
+    <div class="row"><span class="lbl">合計（初回目安）</span><span class="val" style="color:var(--amber)">約3〜4時間</span></div>
+  </div>
+
+  <div class="section-title" style="margin-top:14px">即決NGリスト</div>
+  <div class="card">
+    <div class="row"><span class="lbl">スリムタワー・省スペース型</span><span class="badge b-ng">NG</span></div>
+    <div class="row"><span class="lbl">電源300W以下</span><span class="badge b-ng">NG</span></div>
+    <div class="row"><span class="lbl">第4〜6世代CPU</span><span class="badge b-ng">NG</span></div>
+    <div class="row"><span class="lbl">ノートPC</span><span class="badge b-ng">NG</span></div>
+    <div class="row"><span class="lbl">CPU・マザーボード単体</span><span class="badge b-warn">今は保留</span></div>
+  </div>
+</div>
+
+<!-- アラート設定 -->
+<div id="p-alert" class="panel">
+  <div class="insight-box">
+    <div class="h">グラボを先に確保してからベース機を探す順番が安全</div>
+    <div class="b">グラボが手元にあれば「このケースに入るか」「電源は足りるか」を実物で確認してからベース機を入札できる。</div>
+  </div>
+
+  <div class="section-title">ヤフオクアラート設定</div>
+
+  <div class="alert-card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px">
+      <div class="alert-kw">GALLERIA i5</div>
+      <span class="badge b-ok">本命</span>
+    </div>
+    <div class="alert-detail">上限：22,000円 ／ ミドルタワー型 ／ 即時通知<br>GTX 1660搭載またはグラボなし完成品を狙う</div>
+  </div>
+
+  <div class="alert-card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px">
+      <div class="alert-kw">ガレリア i5 デスクトップ</div>
+      <span class="badge b-ok">本命</span>
+    </div>
+    <div class="alert-detail">上限：22,000円 ／ 日本語キーワードで補足 ／ 即時通知</div>
+  </div>
+
+  <div class="alert-card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px">
+      <div class="alert-kw">G-Tune i5 デスクトップ</div>
+      <span class="badge b-warn">対抗</span>
+    </div>
+    <div class="alert-detail">上限：22,000円 ／ 第4〜6世代混入注意<br>タイトルに「i5-8400」「i5-9400F」等の記載を必ず確認</div>
+  </div>
+
+  <div class="alert-card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px">
+      <div class="alert-kw">LEVEL∞ i5 デスクトップ</div>
+      <span class="badge b-warn">対抗</span>
+    </div>
+    <div class="alert-detail">上限：20,000円 ／ iiyama製 ／ 電源容量の写真確認必須</div>
+  </div>
+
+  <div class="alert-card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px">
+      <div class="alert-kw">GTX 1660 Super 動作確認済</div>
+      <span class="badge b-list">グラボ補充</span>
+    </div>
+    <div class="alert-detail">上限：9,000円（送料込） ／ ジャンク可<br>FFXVベンチスコア付き出品を優先</div>
+  </div>
+
+  <div class="section-title" style="margin-top:14px">入札時チェックリスト</div>
+  <div class="card">
+    <ul class="checklist">
+      <li><span class="ci-ok">✓</span><span>タイトルにi5-8/9/10世代の記載がある</span></li>
+      <li><span class="ci-ok">✓</span><span>GTX 1660搭載またはグラボなしの明記がある</span></li>
+      <li><span class="ci-ok">✓</span><span>動作確認済みの記載がある（ジャンクでも可）</span></li>
+      <li><span class="ci-ok">✓</span><span>出品者評価が概ね良好</span></li>
+      <li><span class="ci-ok">✓</span><span>内部写真でミドルタワー確認・PCIeスロット空き</span></li>
+      <li><span class="ci-warn">!</span><span>電源容量が写真やスペックで450W以上確認できる</span></li>
+    </ul>
+  </div>
+</div>
+
+<script>
+const BUDGET = 80000;
+const INITIAL_PARTS = [
+  {name:'GTX 1660 Super（ジャンク）', cost:6000, status:'落札済み・到着待ち', note:'動作確認なし'},
+  {name:'GTX 1660 Super OC GIGABYTE', cost:0, status:'入札中（上限6,350円）', note:'FFXVスコア6431確認済み'},
+  {name:'DDR4 16GB CORSAIR VENGEANCE', cost:3380, status:'落札済み・到着待ち', note:'動作確認済み 8GB×2'},
+];
+
+const STATUSES = {
+  watch:{label:'監視中', cls:'b-watch'},
+  bid:{label:'入札中', cls:'b-bid'},
+  buy:{label:'仕入済', cls:'b-buy'},
+  work:{label:'作業中', cls:'b-work'},
+  list:{label:'出品中', cls:'b-list'},
+  sold:{label:'売却済', cls:'b-sold'},
+};
+
+function loadCases(){
+  try{ return JSON.parse(localStorage.getItem('pc_cases')||'[]'); }catch(e){ return []; }
+}
+function saveCases(c){ try{ localStorage.setItem('pc_cases', JSON.stringify(c)); }catch(e){} }
+
+function yen(n){ return n ? '¥'+Math.round(n).toLocaleString() : '—'; }
+function calcProfit(c){
+  if(!c.buy || !c.sell) return null;
+  return c.sell - (c.buy + (c.custom||0)) - (c.fee||5500);
+}
+
+function renderAll(){
+  const cases = loadCases();
+  renderMetrics(cases);
+  renderParts();
+  renderActiveCases(cases);
+  renderAllCases(cases);
+}
+
+function renderMetrics(cases){
+  const partCost = INITIAL_PARTS.reduce((s,p)=>s+(p.cost||0), 0);
+  const caseCost = cases.filter(c=>['buy','work','list','sold'].includes(c.status))
+    .reduce((s,c)=>s+(c.buy||0)+(c.custom||0), 0);
+  const spent = partCost + caseCost;
+  const remain = BUDGET - spent;
+  const profit = cases.filter(c=>c.status==='sold').reduce((s,c)=>s+(calcProfit(c)||0), 0);
+  const active = cases.filter(c=>c.status!=='sold').length;
+  const pct = Math.min(100, Math.round(spent/BUDGET*100));
+
+  document.getElementById('hd-remain').textContent = yen(remain);
+  document.getElementById('metrics').innerHTML = `
+    <div class="metric"><div class="lbl">軍資金残高</div><div class="val">${yen(remain)}</div><div class="sub">予算 ¥${BUDGET.toLocaleString()} 中</div><div class="progress"><div class="progress-fill" style="width:${pct}%"></div></div></div>
+    <div class="metric g"><div class="lbl">確定利益（累計）</div><div class="val">${yen(profit)}</div><div class="sub">売却済み案件</div></div>
+    <div class="metric"><div class="lbl">進行中案件</div><div class="val">${active}件</div><div class="sub">仕入〜出品中</div></div>
+    <div class="metric a"><div class="lbl">原価投下（累計）</div><div class="val">${yen(spent)}</div><div class="sub">パーツ含む</div></div>
+  `;
+}
+
+function renderParts(){
+  document.getElementById('parts-card').innerHTML = INITIAL_PARTS.map(p=>`
+    <div class="part-item">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div>
+          <div class="part-name">${p.name}</div>
+          <div class="part-meta">${p.status}${p.note ? ' · '+p.note : ''}</div>
+        </div>
+        <div class="part-cost">${p.cost ? yen(p.cost) : '入札中'}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function caseHTML(c, idx, showActions){
+  const p = calcProfit(c);
+  const st = STATUSES[c.status] || STATUSES.watch;
+  return `
+    <div class="case-card">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:6px">
+        <div class="case-title">${c.title}</div>
+        <span class="badge ${st.cls}" style="flex-shrink:0">${st.label}</span>
+      </div>
+      <div class="case-chips">
+        ${c.gpu ? `<span class="chip chip-gpu">${c.gpu}</span>` : ''}
+        ${c.buy ? `<span class="chip chip-cost">仕入 ${yen(c.buy)}</span>` : ''}
+        ${c.custom ? `<span class="chip chip-cost">+${yen(c.custom)}</span>` : ''}
+        ${c.sell ? `<span class="chip chip-sell">売値 ${yen(c.sell)}</span>` : ''}
+      </div>
+      <div class="case-footer">
+        ${p !== null
+          ? `<span class="${p>=0?'profit-pos':'profit-neg'}">純利 ${yen(p)}</span>`
+          : `<span class="profit-na">売値未確定</span>`}
+        ${c.memo ? `<span style="font-size:10px;color:var(--text2)">${c.memo.substring(0,24)}${c.memo.length>24?'…':''}</span>` : ''}
+      </div>
+      ${showActions ? `
+        <div class="case-actions">
+          <div class="btn-sm" onclick="changeStatus(${idx})">ステータス変更</div>
+          <div class="btn-sm danger" onclick="deleteCase(${idx})">削除</div>
+        </div>
+      ` : ''}
+    </div>
+  `;
+}
+
+function renderActiveCases(cases){
+  const active = cases.map((c,i)=>({c,i})).filter(x=>x.c.status!=='sold');
+  document.getElementById('active-cases').innerHTML = active.length
+    ? active.map(x=>caseHTML(x.c, x.i, false)).join('')
+    : '<div class="empty"><div class="empty-icon">📋</div><div>進行中の案件なし</div></div>';
+}
+
+function renderAllCases(cases){
+  document.getElementById('all-cases').innerHTML = cases.length
+    ? cases.slice().reverse().map((c,ri)=>caseHTML(c, cases.length-1-ri, true)).join('')
+    : '<div class="empty"><div class="empty-icon">📋</div><div>案件がありません</div><div style="font-size:11px;margin-top:4px;color:var(--text2)">「＋ 新規登録」から追加できます</div></div>';
+}
+
+function addCase(e){
+  e.preventDefault();
+  const cases = loadCases();
+  cases.push({
+    title: document.getElementById('f-title').value,
+    status: document.getElementById('f-status').value,
+    buy: +document.getElementById('f-buy').value || 0,
+    custom: +document.getElementById('f-custom').value || 0,
+    sell: +document.getElementById('f-sell').value || 0,
+    fee: +document.getElementById('f-fee').value || 5500,
+    gpu: document.getElementById('f-gpu').value,
+    memo: document.getElementById('f-memo').value,
+    date: new Date().toLocaleDateString('ja-JP'),
+  });
+  saveCases(cases);
+  e.target.reset();
+  document.getElementById('f-fee').value = '5500';
+  sw('cases', document.querySelector('.tab:nth-child(2)'));
+  renderAll();
+}
+
+function changeStatus(idx){
+  const cases = loadCases();
+  const opts = Object.entries(STATUSES).map(([k,v])=>k+': '+v.label).join('\n');
+  const val = prompt('ステータスを入力\n\n'+opts+'\n\n現在: '+cases[idx].status);
+  if(val && STATUSES[val.trim()]){
+    cases[idx].status = val.trim();
+    saveCases(cases);
+    renderAll();
+  }
+}
+
+function deleteCase(idx){
+  if(!confirm('この案件を削除しますか？')) return;
+  const cases = loadCases();
+  cases.splice(idx, 1);
+  saveCases(cases);
+  renderAll();
+}
+
+function sw(id, el){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
+  if(el) el.classList.add('on');
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('on'));
+  document.getElementById('p-'+id).classList.add('on');
+  window.scrollTo(0,0);
+}
+
+renderAll();
+</script>
+</body>
+</html>
