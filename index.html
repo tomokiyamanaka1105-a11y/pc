@@ -515,6 +515,53 @@ button,select,input,textarea{font-family:inherit;font-size:14px;-webkit-appearan
   </div>
 </div>
 
+<!-- PC編集モーダル -->
+<div class="mo" id="mo-pc-edit" onclick="if(event.target===this)closeMo('mo-pc-edit')">
+  <div class="mo-box" onclick="event.stopPropagation()">
+    <div class="mo-title">PC在庫を編集</div>
+    <div class="mo-body">
+      <div class="mo-field"><label>名称・型番</label><input id="edit-pc-title" type="text"></div>
+      <div class="mo-form-row">
+        <div class="mo-field"><label>仕入れ価格（円）</label><input id="edit-pc-cost" type="number" inputmode="numeric" min="0"></div>
+        <div class="mo-field"><label>送料（円）</label><input id="edit-pc-ship" type="number" inputmode="numeric" min="0" value="0"></div>
+      </div>
+      <div class="mo-field"><label>ステータス</label>
+        <select id="edit-pc-status">
+          <option value="bid">入札中</option>
+          <option value="wait">到着待ち</option>
+          <option value="stock">在庫あり</option>
+          <option value="used">案件に使用</option>
+          <option value="sold">売却済み</option>
+        </select>
+      </div>
+      <div class="mo-field"><label>状態</label>
+        <select id="edit-pc-cond">
+          <option value="動作確認済み">動作確認済み</option>
+          <option value="ジャンク（動作不明）">ジャンク（動作不明）</option>
+          <option value="良好">良好</option>
+          <option value="やや傷あり">やや傷あり</option>
+        </select>
+      </div>
+      <div style="font-size:11px;font-weight:600;color:var(--accent);margin-bottom:8px">スペック</div>
+      <div class="mo-form-row">
+        <div class="mo-field"><label>CPU</label><input id="edit-pc-cpu" type="text" placeholder="i5-9400F"></div>
+        <div class="mo-field"><label>GPU</label><input id="edit-pc-gpu" type="text" placeholder="なし / GTX1660S"></div>
+      </div>
+      <div class="mo-form-row">
+        <div class="mo-field"><label>RAM</label><input id="edit-pc-ram" type="text" placeholder="16GB DDR4"></div>
+        <div class="mo-field"><label>SSD</label><input id="edit-pc-ssd" type="text" placeholder="SSD 512GB"></div>
+      </div>
+      <div class="mo-form-row">
+        <div class="mo-field"><label>電源</label><input id="edit-pc-psu" type="text" placeholder="500W"></div>
+        <div class="mo-field"><label>MB</label><input id="edit-pc-mb" type="text" placeholder="B360M"></div>
+      </div>
+      <div class="mo-field"><label>メモ</label><input id="edit-pc-memo" type="text" placeholder="特記事項など"></div>
+      <div class="btn primary full" id="btn-save-pc-edit" style="margin-top:4px">保存する</div>
+    </div>
+    <div class="mo-cancel" onclick="closeMo('mo-pc-edit')">キャンセル</div>
+  </div>
+</div>
+
 <!-- 削除確認 -->
 <div class="mo" id="mo-del" onclick="if(event.target===this)closeMo('mo-del')">
   <div class="mo-box" onclick="event.stopPropagation()">
@@ -754,6 +801,7 @@ function pcCardFull(pc){
       ${pc.status==='wait' ?`<div class="btn sm accent" onclick="quickPcSt('${pc.id}','stock')">在庫に追加</div>`:''}
       ${pc.status==='stock'?`<div class="btn sm" onclick="openDetach('${pc.id}')">🔧 パーツを取り外す</div>`:''}
       <div class="btn sm" onclick="openPcSt('${pc.id}')">ステータス変更</div>
+      <div class="btn sm accent" onclick="openPcEdit('${pc.id}')">✏️ 編集</div>
       <div class="btn sm danger" onclick="openDel('pc','${pc.id}')">削除</div>
     </div>
   </div>`;
@@ -782,7 +830,7 @@ function partHTML(p,full){
     ${full?`<div class="part-actions">
       ${p.status==='bid'      ?`<div class="btn sm accent" onclick="quickPartSt('${p.id}','wait')">到着した</div>`:''}
       ${p.status==='wait'     ?`<div class="btn sm accent" onclick="quickPartSt('${p.id}','stock')">在庫に追加</div>`:''}
-      ${['stock','detached'].includes(p.status)?`<div class="btn sm" onclick="openAttach('${p.id}')">案件に組み込む</div>`:''}
+      ${['stock','detached'].includes(p.status)?`<div class="btn sm" onclick="openAttachToPc('${p.id}')">🖥 PC在庫に組み込む</div>`:''}
       ${p.status==='used'     ?`<div class="btn sm accent" onclick="detachPart('${p.id}')">取り外す</div>`:''}
       <div class="btn sm" onclick="openPartSt('${p.id}')">変更</div>
       <div class="btn sm danger" onclick="openDel('part','${p.id}')">削除</div>
@@ -925,6 +973,43 @@ function openPcSt(id){
 }
 async function setPcSt(st){await fbUpd(`pcs/${_pcStId}`,{status:st});closeMo('mo-pc-st');}
 
+// PC編集
+let _editPcId=null;
+function openPcEdit(id){
+  _editPcId=id;
+  const pc=STATE.pcs[id];if(!pc)return;
+  const fields={
+    'edit-pc-title':pc.title||'','edit-pc-cost':pc.cost||0,'edit-pc-ship':pc.ship||0,
+    'edit-pc-cpu':pc.cpu||'','edit-pc-gpu':pc.gpu||'','edit-pc-ram':pc.ram||'',
+    'edit-pc-ssd':pc.ssd||'','edit-pc-psu':pc.psu||'','edit-pc-mb':pc.mb||'',
+    'edit-pc-memo':pc.memo||'',
+  };
+  Object.entries(fields).forEach(([id,val])=>{const el=document.getElementById(id);if(el)el.value=val;});
+  document.getElementById('edit-pc-status').value=pc.status||'stock';
+  document.getElementById('edit-pc-cond').value=pc.cond||'動作確認済み';
+  openMo('mo-pc-edit');
+}
+document.getElementById('btn-save-pc-edit').addEventListener('click',async()=>{
+  if(!_editPcId)return;
+  const title=document.getElementById('edit-pc-title').value.trim();
+  if(!title){alert('名称を入力してください');return;}
+  await fbUpd(`pcs/${_editPcId}`,{
+    title,
+    cost:+document.getElementById('edit-pc-cost').value||0,
+    ship:+document.getElementById('edit-pc-ship').value||0,
+    status:document.getElementById('edit-pc-status').value,
+    cond:document.getElementById('edit-pc-cond').value,
+    cpu:document.getElementById('edit-pc-cpu').value,
+    gpu:document.getElementById('edit-pc-gpu').value,
+    ram:document.getElementById('edit-pc-ram').value,
+    ssd:document.getElementById('edit-pc-ssd').value,
+    psu:document.getElementById('edit-pc-psu').value,
+    mb:document.getElementById('edit-pc-mb').value,
+    memo:document.getElementById('edit-pc-memo').value,
+  });
+  closeMo('mo-pc-edit');
+});
+
 // パーツ取り外しモーダル（PC本体から）
 function openDetach(pcId){
   _detachPcId=pcId;
@@ -1021,21 +1106,26 @@ async function setPartSt(st){
   closeMo('mo-part-st');
 }
 
-// 案件に組み込む（単品パーツ → 案件）
-function openAttach(partId){
-  _partsMgrCaseId=null;
-  const avail=cases().filter(c=>['inspect','work','bench','photo','list'].includes(c.status));
-  if(!avail.length){alert('組み込み先の案件がありません\n（検品中〜出品中の案件が必要です）');return;}
-  // 簡易モーダル
-  document.getElementById('mo-parts-mgr-title').textContent='どの案件に組み込む？';
+// 単品パーツ → PC在庫に組み込む
+function openAttachToPc(partId){
+  const avail=pcs().filter(p=>['stock','wait'].includes(p.status));
+  if(!avail.length){alert('組み込み先のPC在庫がありません\n（在庫あり・到着待ちのPCが必要です）');return;}
+  document.getElementById('mo-parts-mgr-title').textContent='どのPC在庫に組み込む？';
   document.getElementById('mo-parts-mgr-body').innerHTML=
-    avail.map(c=>`<div class="mo-opt" onclick="attachPartToCase('${partId}','${c.id}')">${c.title}</div>`).join('');
+    avail.map(p=>`<div class="mo-opt" onclick="attachPartToPc('${partId}','${p.id}')">${p.title}<div style="font-size:11px;color:var(--text2);margin-top:2px">${[p.cpu,p.gpu,p.ram].filter(Boolean).join(' / ')||'スペック未入力'}</div></div>`).join('');
   document.getElementById('mo-parts-mgr-total').textContent='';
   document.getElementById('btn-save-parts').style.display='none';
   openMo('mo-parts-mgr');
 }
-async function attachPartToCase(partId,caseId){
-  await fbUpd(`parts/${partId}`,{status:'used',caseId});
+async function attachPartToPc(partId,pcId){
+  const p=STATE.parts[partId];const pc=STATE.pcs[pcId];
+  if(!p||!pc)return;
+  // PCのpcPartsに追加
+  const pl=[...pcPartsList(pc)];
+  pl.push({name:p.name,price:(p.cost||0)+(p.ship||0),cat:p.cat||'OTHER'});
+  await fbUpd(`pcs/${pcId}`,{pcParts:pl});
+  // パーツを「組込み済み」に
+  await fbUpd(`parts/${partId}`,{status:'used',caseId:null,attachedPcId:pcId});
   closeMo('mo-parts-mgr');
   document.getElementById('btn-save-parts').style.display='';
 }
@@ -1252,8 +1342,8 @@ function swPanel(id){
 }
 
 Object.assign(window,{
-  quickPcSt,openPcSt,setPcSt,openDetach,execDetachPcPart,detachPcPart,
-  quickPartSt,detachPart,openPartSt,setPartSt,openAttach,attachPartToCase,
+  quickPcSt,openPcSt,setPcSt,openPcEdit,openDetach,execDetachPcPart,detachPcPart,
+  quickPartSt,detachPart,openPartSt,setPartSt,openAttachToPc,attachPartToPc,
   togglePartSel,openPartsMgr,openCaseSt,setCaseSt,setWonSt,
   openSell,updateSellProfit,onPlatformChange,onShipSelChange,
   openDel,closeMo,swPanel,openBudgetMo,
