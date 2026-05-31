@@ -666,7 +666,13 @@ function cases(){return Object.values(STATE.cases).sort((a,b)=>a.date>b.date?-1:
 // PC本体のパーツ一覧（pcPartsは {name,price,cat} の配列）
 function pcPartsList(pc){return Array.isArray(pc.pcParts)?pc.pcParts:[];}
 // PC本体の総コスト
-function pcCost(pc){return (pc.cost||0)+(pc.ship||0);}
+function pcCost(pc){
+  const base=(pc.cost||0)+(pc.ship||0);
+  const partsSum=pcPartsList(pc).reduce((s,p)=>s+(p.price||0),0);
+  return base+partsSum;
+}
+// PC本体の仕入れ価格のみ（パーツ除く）
+function pcBaseCost(pc){return (pc.cost||0)+(pc.ship||0);}
 // パーツの総コスト
 function partCost(p){return (p.cost||0)+(p.ship||0);}
 
@@ -689,7 +695,8 @@ function calcInventoryValue(){
   // PC本体在庫（used/sold以外）
   const pcVal=pcs().filter(p=>!['used','sold'].includes(p.status)).reduce((s,p)=>s+pcCost(p),0);
   // 単品パーツ在庫（used/sold以外）
-  const partVal=parts().filter(p=>!['used','sold'].includes(p.status)).reduce((s,p)=>s+partCost(p),0);
+  // PC在庫に組み込み済み（attachedPcId あり）は pcCost に含まれているので除外
+  const partVal=parts().filter(p=>!['used','sold'].includes(p.status)&&!p.attachedPcId).reduce((s,p)=>s+partCost(p),0);
   return {pcVal,partVal,total:pcVal+partVal};
 }
 
@@ -764,7 +771,7 @@ function pcCardSmall(pc){
       <div class="pc-title">🖥 ${pc.title}</div>
       <span class="badge ${st.cls}">${st.label}</span>
     </div>
-    <div style="font-size:12px;color:var(--amber);font-variant-numeric:tabular-nums">${yen(pcCost(pc))}</div>
+    <div style="font-size:12px;color:var(--amber);font-variant-numeric:tabular-nums">${yen(pcBaseCost(pc))}<span style="font-size:10px;color:var(--text2)"> 仕入</span>${pcPartsList(pc).length?` + ${yen(pcPartsList(pc).reduce((s,p)=>s+(p.price||0),0))} パーツ = <b style="color:var(--accent)">${yen(pcCost(pc))}</b>`:""}</div>
     ${pc.cpu||pc.gpu?`<div style="font-size:11px;color:var(--text2);margin-top:4px">${[pc.cpu,pc.gpu,pc.ram,pc.ssd].filter(Boolean).join(' / ')}</div>`:''}
   </div>`;
 }
@@ -781,8 +788,9 @@ function pcCardFull(pc){
       <div class="pc-title">🖥 ${pc.title}</div>
       <span class="badge ${st.cls}">${st.label}</span>
     </div>
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-      <span style="font-size:14px;font-weight:700;color:var(--amber)">${yen(pcCost(pc))}</span>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap">
+      <span style="font-size:14px;font-weight:700;color:var(--amber)">${yen(pcBaseCost(pc))}<span style="font-size:10px;color:var(--text2);font-weight:400"> 仕入</span></span>
+      ${pcPartsList(pc).length?`<span style="font-size:12px;color:var(--text2)">+ パーツ ${yen(pcPartsList(pc).reduce((s,p)=>s+(p.price||0),0))}</span><span style="font-size:13px;font-weight:700;color:var(--accent)">= ${yen(pcCost(pc))}</span>`:""}
       <span style="font-size:11px;color:var(--text2)">${pc.cond||''}</span>
     </div>
     ${specItems.length?`<div class="spec-grid">${specItems.map(([l,v])=>`<div class="spec-item"><div class="spec-lbl">${l}</div><div class="spec-val">${v}</div></div>`).join('')}</div>`:''}
