@@ -22,6 +22,10 @@ button,select,input,textarea{font-family:inherit;font-size:14px;-webkit-appearan
 .topbar-right{margin-left:auto;text-align:right}
 .remain{font-size:15px;font-weight:700;color:var(--accent)}
 .remain-lbl{font-size:10px;color:var(--text2)}
+.sync-dot{width:7px;height:7px;border-radius:50%;background:var(--text3);display:inline-block;margin-left:6px;vertical-align:middle;transition:background .3s}
+.sync-dot.ok{background:var(--green)}
+.sync-dot.err{background:var(--red)}
+.sync-dot.loading{background:var(--amber)}
 
 .tabs{display:flex;background:var(--bg2);border-bottom:1px solid var(--border);overflow-x:auto;scrollbar-width:none;position:sticky;top:63px;z-index:199}
 .tabs::-webkit-scrollbar{display:none}
@@ -47,7 +51,6 @@ button,select,input,textarea{font-family:inherit;font-size:14px;-webkit-appearan
 .row:last-child{border-bottom:none}
 .row .rl{font-size:12px;color:var(--text2)}.row .rv{font-size:12px;font-weight:500}
 
-/* パーツカード */
 .part{padding:11px 14px;border-bottom:1px solid var(--border)}
 .part:last-child{border-bottom:none}
 .part-top{display:flex;align-items:flex-start;gap:8px}
@@ -57,13 +60,11 @@ button,select,input,textarea{font-family:inherit;font-size:14px;-webkit-appearan
 .part-note{font-size:11px;color:var(--text2);margin-top:3px}
 .part-actions{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-top:8px}
 
-/* 案件カード */
 .ccase{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:10px}
 .ccase-head{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:7px}
 .ccase-title{font-size:13px;font-weight:600;line-height:1.4;flex:1}
 .chips{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px}
 .chip{font-size:10px;font-weight:600;padding:2px 7px;border-radius:3px;border:1px solid var(--border)}
-.ch-gpu{background:#00c87a18;color:#44ddaa;border-color:#00c87a40}
 .ch-cost{background:#ffaa0018;color:#ffcc66;border-color:#ffaa0040}
 .ch-sell{background:#0090ff18;color:#66bbff;border-color:#0090ff40}
 .ch-part{background:#9966ff18;color:#bb99ff;border-color:#9966ff40}
@@ -74,7 +75,6 @@ button,select,input,textarea{font-family:inherit;font-size:14px;-webkit-appearan
 .ccase-actions{display:grid;grid-template-columns:1fr 1fr;gap:7px}
 .ccase-actions.three{grid-template-columns:1fr 1fr 1fr}
 
-/* バッジ */
 .badge{display:inline-flex;align-items:center;font-size:10px;font-weight:600;padding:3px 9px;border-radius:12px;white-space:nowrap}
 .b-bid{background:#ffaa0022;color:#ffcc66}
 .b-wait{background:#0090ff22;color:#66bbff}
@@ -91,7 +91,6 @@ button,select,input,textarea{font-family:inherit;font-size:14px;-webkit-appearan
 .b-warn{background:#ffaa0022;color:#ffcc66}
 .b-info{background:#0090ff22;color:#66bbff}
 
-/* ボタン */
 .btn{display:flex;align-items:center;justify-content:center;padding:10px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:var(--bg3);color:var(--text);min-height:44px;-webkit-user-select:none;user-select:none;transition:opacity .1s;text-align:center;line-height:1.3}
 .btn:active{opacity:.65}
 .btn.primary{background:var(--accent);color:#000;border-color:var(--accent);font-size:14px;padding:13px}
@@ -100,7 +99,6 @@ button,select,input,textarea{font-family:inherit;font-size:14px;-webkit-appearan
 .btn.full{width:100%}
 .btn.sm{font-size:11px;padding:7px 10px;min-height:36px}
 
-/* フォーム */
 .form-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:12px}
 .form-card h3{font-size:13px;font-weight:600;margin-bottom:14px;color:var(--text2)}
 .field{margin-bottom:14px}
@@ -111,28 +109,30 @@ button,select,input,textarea{font-family:inherit;font-size:14px;-webkit-appearan
 .field textarea{height:68px;resize:vertical;font-family:inherit}
 .form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 
-/* チェックリスト */
 .checklist{list-style:none;padding:0}
 .checklist li{display:flex;align-items:flex-start;gap:9px;padding:9px 14px;border-bottom:1px solid var(--border);font-size:13px;line-height:1.5}
 .checklist li:last-child{border-bottom:none}
 .ci-ok{color:var(--green);flex-shrink:0;margin-top:1px}
 .ci-warn{color:var(--amber);flex-shrink:0;margin-top:1px}
 
-/* アラートカード */
 .alert-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:8px}
 .alert-kw{font-size:15px;font-weight:700;font-family:monospace;margin-bottom:5px}
 .alert-detail{font-size:12px;color:var(--text2);line-height:1.6}
 .insight{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:10px}
 .insight .h{font-size:12px;font-weight:700;color:var(--accent);margin-bottom:5px}
 .insight .b{font-size:12px;color:var(--text2);line-height:1.7}
-.insight .b b{color:var(--text)}
 
 .empty{padding:48px 20px;text-align:center;color:var(--text2)}
 .empty-icon{font-size:36px;margin-bottom:10px}
 .empty-txt{font-size:13px}
 .empty-sub{font-size:12px;color:var(--text3);margin-top:5px}
 
-/* モーダル */
+.loading-screen{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999;gap:14px}
+.loading-screen .logo-big{width:56px;height:56px;background:var(--accent);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:30px}
+.loading-screen p{font-size:13px;color:var(--text2)}
+.spinner{width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
 .mo{display:none;position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:500;align-items:flex-end;justify-content:center}
 .mo.on{display:flex}
 .mo-box{background:var(--bg2);border-radius:16px 16px 0 0;padding:16px 16px 40px;width:100%;max-height:88vh;overflow-y:auto}
@@ -144,29 +144,28 @@ button,select,input,textarea{font-family:inherit;font-size:14px;-webkit-appearan
 .mo-cancel{margin-top:10px;background:var(--bg3);border-radius:10px;padding:15px;font-size:14px;font-weight:600;cursor:pointer;text-align:center;color:var(--text2)}
 .mo-cancel:active{opacity:.7}
 .mo-body{padding:4px 0 8px}
-
-/* 売却入力モーダル内フォーム */
 .mo-field{margin-bottom:12px}
 .mo-field label{display:block;font-size:12px;color:var(--text2);margin-bottom:5px}
 .mo-field input{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:16px;padding:11px 13px;outline:none}
 .mo-field input:focus{border-color:var(--accent)}
-
-/* タイムライン */
-.timeline{padding:4px 0}
-.tl-item{display:flex;gap:10px;padding:6px 14px}
-.tl-dot{width:8px;height:8px;border-radius:50%;background:var(--accent);flex-shrink:0;margin-top:5px}
-.tl-dot.gray{background:var(--text3)}
-.tl-content{flex:1;font-size:11px;color:var(--text2);line-height:1.5}
-.tl-content b{color:var(--text)}
 </style>
 </head>
 <body>
+
+<!-- ローディング -->
+<div class="loading-screen" id="loading">
+  <div class="logo-big">📦</div>
+  <div class="spinner"></div>
+  <p>データを読み込み中...</p>
+</div>
+
+<div id="app" style="display:none">
 
 <div class="topbar">
   <div class="logo">📦</div>
   <div><h1>PC物販管理</h1><div class="topbar-sub">中古デスクトップ転売</div></div>
   <div class="topbar-right">
-    <div class="remain" id="hd-remain">¥—</div>
+    <div class="remain" id="hd-remain">¥—<span class="sync-dot" id="sync-dot"></span></div>
     <div class="remain-lbl">軍資金残高</div>
   </div>
 </div>
@@ -224,15 +223,15 @@ button,select,input,textarea{font-family:inherit;font-size:14px;-webkit-appearan
       <select id="f-status">
         <option value="watch">監視中（入札検討）</option>
         <option value="bid">入札中</option>
-        <option value="buy">仕入れ済み</option>
+        <option value="wait">到着待ち</option>
+        <option value="buy">仕入れ済み（到着済）</option>
         <option value="work">作業中</option>
         <option value="list">出品中</option>
-        <option value="sold">売却済み</option>
       </select>
     </div>
     <div class="form-row">
       <div class="field"><label>仕入れ価格（円）</label><input id="f-buy" type="number" inputmode="numeric" placeholder="12500" min="0"></div>
-      <div class="field"><label>送料込み（円）</label><input id="f-ship-buy" type="number" inputmode="numeric" placeholder="1500" min="0" value="0"></div>
+      <div class="field"><label>送料（円）</label><input id="f-ship" type="number" inputmode="numeric" placeholder="1500" min="0" value="0"></div>
     </div>
     <div class="form-row">
       <div class="field"><label>売値（円）</label><input id="f-sell" type="number" inputmode="numeric" placeholder="42000" min="0" value="0"></div>
@@ -298,18 +297,17 @@ button,select,input,textarea{font-family:inherit;font-size:14px;-webkit-appearan
   </ul></div>
 </div>
 
-<!-- ====== MODALS ====== -->
+</div><!-- /app -->
 
-<!-- パーツ ステータス変更 -->
+<!-- モーダル群 -->
 <div class="mo" id="mo-part-st" onclick="if(event.target===this)closeMo('mo-part-st')">
   <div class="mo-box" onclick="event.stopPropagation()">
-    <div class="mo-title" id="mo-part-st-title">ステータスを変更</div>
+    <div class="mo-title" id="mo-part-st-title">ステータス変更</div>
     <div id="mo-part-st-opts"></div>
     <div class="mo-cancel" onclick="closeMo('mo-part-st')">キャンセル</div>
   </div>
 </div>
 
-<!-- パーツ 案件に組み込む -->
 <div class="mo" id="mo-attach" onclick="if(event.target===this)closeMo('mo-attach')">
   <div class="mo-box" onclick="event.stopPropagation()">
     <div class="mo-title">どの案件に組み込む？</div>
@@ -318,16 +316,14 @@ button,select,input,textarea{font-family:inherit;font-size:14px;-webkit-appearan
   </div>
 </div>
 
-<!-- 案件 ステータス変更 -->
 <div class="mo" id="mo-case-st" onclick="if(event.target===this)closeMo('mo-case-st')">
   <div class="mo-box" onclick="event.stopPropagation()">
-    <div class="mo-title" id="mo-case-st-title">ステータスを変更</div>
+    <div class="mo-title" id="mo-case-st-title">ステータス変更</div>
     <div id="mo-case-st-opts"></div>
     <div class="mo-cancel" onclick="closeMo('mo-case-st')">キャンセル</div>
   </div>
 </div>
 
-<!-- 売却入力 -->
 <div class="mo" id="mo-sell" onclick="if(event.target===this)closeMo('mo-sell')">
   <div class="mo-box" onclick="event.stopPropagation()">
     <div class="mo-title">売却情報を入力</div>
@@ -344,7 +340,6 @@ button,select,input,textarea{font-family:inherit;font-size:14px;-webkit-appearan
   </div>
 </div>
 
-<!-- 削除確認 -->
 <div class="mo" id="mo-del" onclick="if(event.target===this)closeMo('mo-del')">
   <div class="mo-box" onclick="event.stopPropagation()">
     <div class="mo-title">削除しますか？</div>
@@ -354,12 +349,30 @@ button,select,input,textarea{font-family:inherit;font-size:14px;-webkit-appearan
   </div>
 </div>
 
-<script>
+<!-- Firebase SDK -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, set, get, onValue, remove, update }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
 // ============================================================
-// データ定義
+// Firebase 初期化
+// ============================================================
+const app = initializeApp({
+  apiKey: "AIzaSyB157TcuOz2YWiQj0Kd1KaSw-nxPx5jws8",
+  authDomain: "pcsell-7ab0a.firebaseapp.com",
+  databaseURL: "https://pcsell-7ab0a-default-rtdb.firebaseio.com",
+  projectId: "pcsell-7ab0a",
+  storageBucket: "pcsell-7ab0a.firebasestorage.app",
+  messagingSenderId: "71294362584",
+  appId: "1:71294362584:web:00bf2c2c0c9b6808f988ad",
+});
+const db = getDatabase(app);
+
+// ============================================================
+// 定数
 // ============================================================
 const BUDGET = 80000;
-
 const PART_ST = {
   bid:  {label:'入札中',    cls:'b-bid'},
   wait: {label:'到着待ち',  cls:'b-wait'},
@@ -367,359 +380,374 @@ const PART_ST = {
   used: {label:'組込み済み',cls:'b-used'},
   sold: {label:'単体売却済',cls:'b-sold-p'},
 };
-
 const CASE_ST = {
-  watch:{label:'監視中',  cls:'b-watch'},
-  bid:  {label:'入札中',  cls:'b-bid'},
-  buy:  {label:'仕入済',  cls:'b-buy'},
-  work: {label:'作業中',  cls:'b-work'},
-  list: {label:'出品中',  cls:'b-list'},
-  sold: {label:'売却済',  cls:'b-sold'},
+  watch:{label:'監視中',   cls:'b-watch'},
+  bid:  {label:'入札中',   cls:'b-bid'},
+  wait: {label:'到着待ち', cls:'b-wait'},
+  buy:  {label:'仕入済',   cls:'b-buy'},
+  work: {label:'作業中',   cls:'b-work'},
+  list: {label:'出品中',   cls:'b-list'},
+  sold: {label:'売却済',   cls:'b-sold'},
 };
 
 // ============================================================
-// ストレージ
+// 状態
 // ============================================================
-function lp(){try{return JSON.parse(localStorage.getItem('pcm_parts'))||initParts()}catch(e){return initParts()}}
-function sp(d){try{localStorage.setItem('pcm_parts',JSON.stringify(d))}catch(e){}}
-function lc(){try{return JSON.parse(localStorage.getItem('pcm_cases'))||[]}catch(e){return[]}}
-function sc(d){try{localStorage.setItem('pcm_cases',JSON.stringify(d))}catch(e){}}
+let STATE = { parts: {}, cases: {} };
+let _partStId = null, _attachPartId = null, _caseStId = null, _sellCaseId = null;
+let _delType = null, _delId = null;
 
-function initParts(){
-  const parts=[
-    {id:uid(),name:'GTX 1660 Super（ジャンク）',cost:6000,status:'wait',note:'動作確認なし',caseId:null,log:[]},
-    {id:uid(),name:'GTX 1660 Super OC GIGABYTE',cost:0,status:'bid',note:'FFXVスコア6431確認済み・入札中上限6,350円',caseId:null,log:[]},
-    {id:uid(),name:'DDR4 16GB CORSAIR VENGEANCE',cost:3380,status:'wait',note:'動作確認済み 8GB×2',caseId:null,log:[]},
-  ];
-  sp(parts);return parts;
+// ============================================================
+// Firebase CRUD
+// ============================================================
+function syncDot(state){ // ok | err | loading
+  const d = document.getElementById('sync-dot');
+  d.className = 'sync-dot ' + state;
 }
 
-function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
-function yen(n){return n!=null?'¥'+Math.round(n).toLocaleString():'—'}
-function today(){return new Date().toLocaleDateString('ja-JP')}
-
-// 案件の総原価（ベース機 + 組み込みパーツ）
-function totalCost(c,parts){
-  const base=(c.buy||0)+(c.shipBuy||0);
-  const partsCost=parts.filter(p=>p.caseId===c.id).reduce((s,p)=>s+(p.cost||0),0);
-  return base+partsCost;
+async function fbSet(path, data) {
+  syncDot('loading');
+  try {
+    await set(ref(db, path), data);
+    syncDot('ok');
+  } catch(e) {
+    syncDot('err');
+    console.error(e);
+  }
 }
-function profit(c,parts){
-  if(!c.sell)return null;
-  return c.sell-totalCost(c,parts)-(c.fee||5500);
+async function fbUpdate(path, data) {
+  syncDot('loading');
+  try {
+    await update(ref(db, path), data);
+    syncDot('ok');
+  } catch(e) { syncDot('err'); }
+}
+async function fbRemove(path) {
+  syncDot('loading');
+  try {
+    await remove(ref(db, path));
+    syncDot('ok');
+  } catch(e) { syncDot('err'); }
+}
+
+// リアルタイム同期
+function startSync() {
+  onValue(ref(db, 'parts'), snap => {
+    STATE.parts = snap.val() || {};
+    renderAll();
+  });
+  onValue(ref(db, 'cases'), snap => {
+    STATE.cases = snap.val() || {};
+    renderAll();
+  });
+}
+
+// ============================================================
+// ユーティリティ
+// ============================================================
+function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+function yen(n){ return n != null ? '¥' + Math.round(n).toLocaleString() : '—'; }
+function today(){ return new Date().toLocaleDateString('ja-JP'); }
+function parts(){ return Object.values(STATE.parts); }
+function cases(){ return Object.values(STATE.cases).sort((a,b)=>a.date>b.date?-1:1); }
+
+function totalCost(c) {
+  const base = (c.buy||0) + (c.ship||0);
+  const pCost = parts().filter(p=>p.caseId===c.id).reduce((s,p)=>s+(p.cost||0), 0);
+  return base + pCost;
+}
+function profit(c) {
+  if (!c.sell) return null;
+  return c.sell - totalCost(c) - (c.fee||5500);
 }
 
 // ============================================================
 // レンダリング
 // ============================================================
-function renderAll(){
-  const parts=lp(), cases=lc();
+function renderAll() {
+  const pp = parts(), cc = cases();
+  const partSpent = pp.filter(p=>p.status!=='sold').reduce((s,p)=>s+(p.cost||0), 0);
+  const caseSpent = cc.filter(c=>['buy','work','list','sold'].includes(c.status))
+    .reduce((s,c)=>s+(c.buy||0)+(c.ship||0), 0);
+  const spent = partSpent + caseSpent;
+  const remain = BUDGET - spent;
+  const totalProfit = cc.filter(c=>c.status==='sold').reduce((s,c)=>s+(profit(c)||0), 0);
+  const active = cc.filter(c=>c.status!=='sold').length;
+  const pct = Math.min(100, Math.round(spent/BUDGET*100));
 
-  // 軍資金計算（入札中・到着待ち・在庫・組込み済みのパーツ + 仕入済以上の案件）
-  const partSpent=parts.filter(p=>p.status!=='sold').reduce((s,p)=>s+(p.cost||0),0);
-  const caseSpent=cases.filter(c=>['buy','work','list','sold'].includes(c.status)).reduce((s,c)=>s+(c.buy||0)+(c.shipBuy||0),0);
-  const spent=partSpent+caseSpent;
-  const remain=BUDGET-spent;
-  const totalProfit=cases.filter(c=>c.status==='sold').reduce((s,c)=>s+(profit(c,parts)||0),0);
-  const active=cases.filter(c=>!['sold'].includes(c.status)).length;
-  const pct=Math.min(100,Math.round(spent/BUDGET*100));
+  document.getElementById('hd-remain').innerHTML =
+    yen(remain) + '<span class="sync-dot" id="sync-dot"></span>';
 
-  document.getElementById('hd-remain').textContent=yen(remain);
-  document.getElementById('metrics').innerHTML=`
-    <div class="kpi"><div class="lbl">軍資金残高</div><div class="val">${yen(remain)}</div><div class="sub">予算 ¥${BUDGET.toLocaleString()}</div><div class="prog"><div class="prog-fill" style="width:${pct}%"></div></div></div>
+  document.getElementById('metrics').innerHTML = `
+    <div class="kpi"><div class="lbl">軍資金残高</div><div class="val">${yen(remain)}</div>
+      <div class="sub">予算 ¥${BUDGET.toLocaleString()}</div>
+      <div class="prog"><div class="prog-fill" style="width:${pct}%"></div></div></div>
     <div class="kpi g"><div class="lbl">確定利益（累計）</div><div class="val">${yen(totalProfit)}</div><div class="sub">売却済み</div></div>
     <div class="kpi"><div class="lbl">進行中案件</div><div class="val">${active}件</div><div class="sub">仕入〜出品中</div></div>
     <div class="kpi a"><div class="lbl">原価投下（累計）</div><div class="val">${yen(spent)}</div><div class="sub">パーツ含む</div></div>
   `;
 
-  // ダッシュボード：在庫パーツ
-  const stockParts=parts.filter(p=>['bid','wait','stock'].includes(p.status));
-  document.getElementById('dash-parts').innerHTML=stockParts.length
-    ?stockParts.map(p=>partRow(p,parts,cases,false)).join('')
-    :'<div style="padding:14px;text-align:center;color:var(--text2);font-size:12px">在庫パーツなし</div>';
+  // ダッシュ：在庫パーツ（入札中・到着待ち・在庫）
+  const sp = pp.filter(p=>['bid','wait','stock'].includes(p.status));
+  document.getElementById('dash-parts').innerHTML = sp.length
+    ? sp.map(p => partHTML(p, false)).join('')
+    : '<div style="padding:14px;text-align:center;color:var(--text2);font-size:12px">在庫パーツなし</div>';
 
-  // ダッシュボード：進行中案件
-  const actCases=cases.filter(c=>c.status!=='sold');
-  document.getElementById('dash-cases').innerHTML=actCases.length
-    ?actCases.map(c=>caseCard(c,parts,cases,false)).join('')
-    :'<div class="empty"><div class="empty-icon">📋</div><div class="empty-txt">進行中の案件なし</div></div>';
+  // ダッシュ：進行中案件
+  const ac = cc.filter(c=>c.status!=='sold');
+  document.getElementById('dash-cases').innerHTML = ac.length
+    ? ac.map(c => caseHTML(c, false)).join('')
+    : '<div class="empty"><div class="empty-icon">📋</div><div class="empty-txt">進行中の案件なし</div></div>';
 
-  // パーツ管理：全件
-  document.getElementById('parts-list').innerHTML=parts.length
-    ?`<div class="card">${parts.map(p=>partRow(p,parts,cases,true)).join('')}</div>`
-    :'<div class="empty"><div class="empty-icon">🔧</div><div class="empty-txt">パーツがありません</div></div>';
+  // パーツ一覧（全件）
+  document.getElementById('parts-list').innerHTML = pp.length
+    ? `<div class="card">${pp.map(p=>partHTML(p,true)).join('')}</div>`
+    : '<div class="empty"><div class="empty-icon">🔧</div><div class="empty-txt">パーツがありません</div></div>';
 
-  // 案件管理：全件
-  document.getElementById('all-cases').innerHTML=cases.length
-    ?cases.slice().reverse().map(c=>caseCard(c,parts,cases,true)).join('')
-    :'<div class="empty"><div class="empty-icon">📋</div><div class="empty-txt">案件がありません</div><div class="empty-sub">「＋ 案件登録」から追加できます</div></div>';
+  // 案件一覧（全件）
+  document.getElementById('all-cases').innerHTML = cc.length
+    ? cc.map(c=>caseHTML(c,true)).join('')
+    : '<div class="empty"><div class="empty-icon">📋</div><div class="empty-txt">案件がありません</div><div class="empty-sub">「＋ 案件登録」から追加できます</div></div>';
 }
 
-function partRow(p,parts,cases,full){
-  const st=PART_ST[p.status]||PART_ST.stock;
-  const attachedCase=p.caseId?cases.find(c=>c.id===p.caseId):null;
-  return`<div class="part">
+function partHTML(p, full) {
+  const st = PART_ST[p.status] || PART_ST.stock;
+  const ac = cases().find(c=>c.id===p.caseId);
+  return `<div class="part">
     <div class="part-top">
       <div class="part-info">
         <div class="part-name">${p.name}</div>
         <div class="part-sub">
           <span class="badge ${st.cls}">${st.label}</span>
-          ${p.cost?`<span style="font-size:11px;color:var(--text2)">${yen(p.cost)}</span>`:''}
-          ${attachedCase?`<span style="font-size:11px;color:var(--purple)">→ ${attachedCase.title.substring(0,14)}…</span>`:''}
+          ${p.cost ? `<span style="font-size:11px;color:var(--text2)">${yen(p.cost)}</span>` : ''}
+          ${ac ? `<span style="font-size:11px;color:var(--purple)">→ ${ac.title.substring(0,14)}…</span>` : ''}
         </div>
-        ${p.note?`<div class="part-note">${p.note}</div>`:''}
+        ${p.note ? `<div class="part-note">${p.note}</div>` : ''}
       </div>
     </div>
-    ${full?`<div class="part-actions">
-      ${p.status==='bid'?`<div class="btn sm accent" onclick="quickPartSt('${p.id}','wait')">到着した</div>`:''}
-      ${p.status==='wait'?`<div class="btn sm accent" onclick="quickPartSt('${p.id}','stock')">在庫に追加</div>`:''}
-      ${p.status==='stock'?`<div class="btn sm" onclick="openAttach('${p.id}')">案件に組み込む</div>`:''}
-      ${p.status==='used'?`<div class="btn sm" style="color:var(--text2);font-size:10px;cursor:default">組込み済み</div>`:''}
-      <div class="btn sm" onclick="openPartSt('${p.id}')">ステータス変更</div>
+    ${full ? `<div class="part-actions">
+      ${p.status==='bid'  ? `<div class="btn sm accent" onclick="quickPartSt('${p.id}','wait')">到着した</div>` : ''}
+      ${p.status==='wait' ? `<div class="btn sm accent" onclick="quickPartSt('${p.id}','stock')">在庫に追加</div>` : ''}
+      ${p.status==='stock'? `<div class="btn sm" onclick="openAttach('${p.id}')">案件に組み込む</div>` : ''}
+      ${p.status==='used' ? `<div class="btn sm" style="color:var(--text2);font-size:10px;cursor:default">組込み済み</div>` : ''}
+      <div class="btn sm" onclick="openPartSt('${p.id}')">変更</div>
       <div class="btn sm danger" onclick="openDel('part','${p.id}')">削除</div>
-    </div>`:''}
+    </div>` : ''}
   </div>`;
 }
 
-function caseCard(c,parts,cases,full){
-  const st=CASE_ST[c.status]||CASE_ST.watch;
-  const tc=totalCost(c,parts);
-  const pr=profit(c,parts);
-  const attachedParts=parts.filter(p=>p.caseId===c.id);
-  return`<div class="ccase">
+function caseHTML(c, full) {
+  const st = CASE_ST[c.status] || CASE_ST.watch;
+  const tc = totalCost(c);
+  const pr = profit(c);
+  const ap = parts().filter(p=>p.caseId===c.id);
+  return `<div class="ccase">
     <div class="ccase-head">
       <div class="ccase-title">${c.title}</div>
       <span class="badge ${st.cls}">${st.label}</span>
     </div>
     <div class="chips">
-      ${c.buy?`<span class="chip ch-cost">ベース機 ${yen(c.buy+(c.shipBuy||0))}</span>`:''}
-      ${attachedParts.map(p=>`<span class="chip ch-part">${p.name.substring(0,12)} ${yen(p.cost)}</span>`).join('')}
-      ${tc?`<span class="chip ch-cost">総原価 ${yen(tc)}</span>`:''}
-      ${c.sell?`<span class="chip ch-sell">売値 ${yen(c.sell)}</span>`:''}
+      ${c.buy ? `<span class="chip ch-cost">ベース機 ${yen((c.buy||0)+(c.ship||0))}</span>` : ''}
+      ${ap.map(p=>`<span class="chip ch-part">${p.name.substring(0,10)} ${yen(p.cost)}</span>`).join('')}
+      ${tc  ? `<span class="chip ch-cost">総原価 ${yen(tc)}</span>` : ''}
+      ${c.sell ? `<span class="chip ch-sell">売値 ${yen(c.sell)}</span>` : ''}
     </div>
     <div class="ccase-foot">
-      ${pr!==null?`<span class="${pr>=0?'p-pos':'p-neg'}">純利 ${yen(pr)}</span>`:`<span class="p-na">売値未確定</span>`}
-      ${c.soldDate?`<span style="font-size:11px;color:var(--text2)">${c.soldDate} 売却</span>`:''}
+      ${pr!==null
+        ? `<span class="${pr>=0?'p-pos':'p-neg'}">純利 ${yen(pr)}</span>`
+        : `<span class="p-na">売値未確定</span>`}
+      ${c.soldDate ? `<span style="font-size:11px;color:var(--text2)">${c.soldDate} 売却</span>` : ''}
     </div>
-    ${c.memo?`<div style="font-size:11px;color:var(--text2);margin-bottom:8px">${c.memo}</div>`:''}
-    ${full?`<div class="ccase-actions${c.status!=='sold'?' three':''}">
-      ${c.status!=='sold'?`<div class="btn sm" onclick="openCaseSt('${c.id}')">ステータス変更</div>`:''}
-      ${c.status==='list'?`<div class="btn sm accent" onclick="openSell('${c.id}')">売却を記録</div>`:''}
-      ${c.status!=='sold'&&c.status!=='list'?`<div class="btn sm accent" onclick="openSell('${c.id}')">売却を記録</div>`:''}
+    ${c.memo ? `<div style="font-size:11px;color:var(--text2);margin-bottom:8px">${c.memo}</div>` : ''}
+    ${full ? `<div class="ccase-actions${c.status!=='sold'?' three':''}">
+      ${c.status!=='sold' ? `<div class="btn sm" onclick="openCaseSt('${c.id}')">ステータス変更</div>` : ''}
+      ${['list','work','buy'].includes(c.status) ? `<div class="btn sm accent" onclick="openSell('${c.id}')">売却を記録</div>` : ''}
       <div class="btn sm danger" onclick="openDel('case','${c.id}')">削除</div>
-    </div>`:''}
+    </div>` : ''}
   </div>`;
 }
 
 // ============================================================
 // パーツ操作
 // ============================================================
-document.getElementById('btn-add-part').addEventListener('click',function(){
-  const name=document.getElementById('p-name').value.trim();
-  if(!name){alert('パーツ名を入力してください');return;}
-  const parts=lp();
-  parts.push({
-    id:uid(),name,
-    cost:+document.getElementById('p-cost').value||0,
-    status:document.getElementById('p-st').value,
-    note:document.getElementById('p-note').value,
-    caseId:null,log:[{date:today(),action:'追加'}],
-  });
-  sp(parts);
-  document.getElementById('p-name').value='';
-  document.getElementById('p-cost').value='0';
-  document.getElementById('p-note').value='';
-  renderAll();
+document.getElementById('btn-add-part').addEventListener('click', async () => {
+  const name = document.getElementById('p-name').value.trim();
+  if (!name) { alert('パーツ名を入力してください'); return; }
+  const id = uid();
+  const part = {
+    id, name,
+    cost: +document.getElementById('p-cost').value || 0,
+    status: document.getElementById('p-st').value,
+    note: document.getElementById('p-note').value,
+    caseId: null,
+    date: today(),
+  };
+  await fbSet(`parts/${id}`, part);
+  document.getElementById('p-name').value = '';
+  document.getElementById('p-cost').value = '0';
+  document.getElementById('p-note').value = '';
 });
 
-// ワンタップ ステータス変更（到着した・在庫追加）
-function quickPartSt(id,newSt){
-  const parts=lp();
-  const p=parts.find(p=>p.id===id);
-  if(!p)return;
-  const labels={wait:'到着待ちに変更',stock:'在庫に追加しました'};
-  p.status=newSt;
-  p.log=p.log||[];
-  p.log.push({date:today(),action:labels[newSt]||newSt});
-  sp(parts);renderAll();
+async function quickPartSt(id, newSt) {
+  await fbUpdate(`parts/${id}`, { status: newSt });
 }
 
-// ステータス変更モーダル
-let _partStId=null;
-function openPartSt(id){
-  _partStId=id;
-  const parts=lp();const p=parts.find(p=>p.id===id);
-  document.getElementById('mo-part-st-title').textContent=p.name;
-  document.getElementById('mo-part-st-opts').innerHTML=
-    Object.entries(PART_ST).map(([k,v])=>`
-      <div class="mo-opt${p.status===k?' on':''}" onclick="setPartSt('${k}')">${v.label}</div>
-    `).join('');
+function openPartSt(id) {
+  _partStId = id;
+  const p = STATE.parts[id];
+  document.getElementById('mo-part-st-title').textContent = p ? p.name.substring(0,20) : '';
+  document.getElementById('mo-part-st-opts').innerHTML =
+    Object.entries(PART_ST).map(([k,v]) =>
+      `<div class="mo-opt${p&&p.status===k?' on':''}" onclick="setPartSt('${k}')">${v.label}</div>`
+    ).join('');
   openMo('mo-part-st');
 }
-function setPartSt(st){
-  const parts=lp();const p=parts.find(p=>p.id===_partStId);
-  if(!p)return;
-  p.status=st;
-  p.log=p.log||[];
-  p.log.push({date:today(),action:'ステータス→'+PART_ST[st].label});
-  // 使用済み以外は案件との紐付けを解除
-  if(st!=='used')p.caseId=null;
-  sp(parts);closeMo('mo-part-st');renderAll();
+async function setPartSt(st) {
+  const upd = { status: st };
+  if (st !== 'used') upd.caseId = null;
+  await fbUpdate(`parts/${_partStId}`, upd);
+  closeMo('mo-part-st');
 }
 
-// 案件に組み込む
-let _attachPartId=null;
-function openAttach(partId){
-  _attachPartId=partId;
-  const cases=lc();
-  const available=cases.filter(c=>['buy','work','list'].includes(c.status));
-  if(!available.length){alert('組み込み先の案件がありません\n（仕入済・作業中・出品中の案件が必要です）');return;}
-  document.getElementById('mo-attach-opts').innerHTML=
-    available.map(c=>`<div class="mo-opt" onclick="attachPart('${c.id}')">${c.title}</div>`).join('');
+function openAttach(partId) {
+  _attachPartId = partId;
+  const avail = cases().filter(c=>['buy','work','list'].includes(c.status));
+  if (!avail.length) { alert('組み込み先の案件がありません\n（仕入済・作業中・出品中の案件が必要です）'); return; }
+  document.getElementById('mo-attach-opts').innerHTML =
+    avail.map(c=>`<div class="mo-opt" onclick="attachPart('${c.id}')">${c.title}</div>`).join('');
   openMo('mo-attach');
 }
-function attachPart(caseId){
-  const parts=lp();const cases=lc();
-  const p=parts.find(p=>p.id===_attachPartId);
-  const c=cases.find(c=>c.id===caseId);
-  if(!p||!c)return;
-  p.status='used';p.caseId=caseId;
-  p.log=p.log||[];
-  p.log.push({date:today(),action:'案件「'+c.title.substring(0,12)+'…」に組み込み'});
-  sp(parts);closeMo('mo-attach');renderAll();
+async function attachPart(caseId) {
+  await fbUpdate(`parts/${_attachPartId}`, { status:'used', caseId });
+  closeMo('mo-attach');
 }
 
 // ============================================================
 // 案件操作
 // ============================================================
-document.getElementById('btn-add-case').addEventListener('click',function(){
-  const title=document.getElementById('f-title').value.trim();
-  if(!title){alert('商品名を入力してください');return;}
-  const cases=lc();
-  cases.push({
-    id:uid(),title,
-    status:document.getElementById('f-status').value,
-    buy:+document.getElementById('f-buy').value||0,
-    shipBuy:+document.getElementById('f-ship-buy').value||0,
-    sell:0,fee:+document.getElementById('f-fee').value||5500,
-    memo:document.getElementById('f-memo').value,
-    date:today(),soldDate:null,
-    log:[{date:today(),action:'案件登録'}],
-  });
-  sc(cases);
-  ['f-title','f-buy','f-memo'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('f-ship-buy').value='0';
+document.getElementById('btn-add-case').addEventListener('click', async () => {
+  const title = document.getElementById('f-title').value.trim();
+  if (!title) { alert('商品名を入力してください'); return; }
+  const id = uid();
+  const c = {
+    id, title,
+    status: document.getElementById('f-status').value,
+    buy:  +document.getElementById('f-buy').value  || 0,
+    ship: +document.getElementById('f-ship').value || 0,
+    sell: +document.getElementById('f-sell').value || 0,
+    fee:  +document.getElementById('f-fee').value  || 5500,
+    memo: document.getElementById('f-memo').value,
+    date: today(),
+    soldDate: null,
+  };
+  await fbSet(`cases/${id}`, c);
+  ['f-title','f-buy','f-memo'].forEach(i=>document.getElementById(i).value='');
+  document.getElementById('f-ship').value='0';
   document.getElementById('f-sell').value='0';
   document.getElementById('f-fee').value='5500';
   document.getElementById('f-status').value='watch';
-  swPanel('cases');renderAll();
+  swPanel('cases');
 });
 
-// 案件ステータス変更
-let _caseStId=null;
-function openCaseSt(id){
-  _caseStId=id;
-  const cases=lc();const c=cases.find(c=>c.id===id);
-  document.getElementById('mo-case-st-title').textContent=c.title.substring(0,20);
-  document.getElementById('mo-case-st-opts').innerHTML=
-    Object.entries(CASE_ST).map(([k,v])=>`
-      <div class="mo-opt${c.status===k?' on':''}" onclick="setCaseSt('${k}')">${v.label}</div>
-    `).join('');
+function openCaseSt(id) {
+  _caseStId = id;
+  const c = STATE.cases[id];
+  document.getElementById('mo-case-st-title').textContent = c ? c.title.substring(0,20) : '';
+  document.getElementById('mo-case-st-opts').innerHTML =
+    Object.entries(CASE_ST).map(([k,v]) =>
+      `<div class="mo-opt${c&&c.status===k?' on':''}" onclick="setCaseSt('${k}')">${v.label}</div>`
+    ).join('');
   openMo('mo-case-st');
 }
-function setCaseSt(st){
-  const cases=lc();const c=cases.find(c=>c.id===_caseStId);
-  if(!c)return;
-  c.status=st;
-  c.log=c.log||[];
-  c.log.push({date:today(),action:'ステータス→'+CASE_ST[st].label});
-  sc(cases);closeMo('mo-case-st');renderAll();
+async function setCaseSt(st) {
+  await fbUpdate(`cases/${_caseStId}`, { status: st });
+  closeMo('mo-case-st');
 }
 
-// 売却記録モーダル
-let _sellCaseId=null;
-function openSell(id){
-  _sellCaseId=id;
-  const cases=lc();const c=cases.find(c=>c.id===id);
-  const parts=lp();
-  document.getElementById('mo-sell-price').value=c.sell||'';
-  document.getElementById('mo-sell-fee').value=c.fee||5500;
-  updateSellProfit(c,parts);
-  document.getElementById('mo-sell-price').oninput=()=>updateSellProfit(c,parts);
-  document.getElementById('mo-sell-fee').oninput=()=>updateSellProfit(c,parts);
+function openSell(id) {
+  _sellCaseId = id;
+  const c = STATE.cases[id];
+  document.getElementById('mo-sell-price').value = c.sell || '';
+  document.getElementById('mo-sell-fee').value = c.fee || 5500;
+  updateSellProfit();
+  document.getElementById('mo-sell-price').oninput = updateSellProfit;
+  document.getElementById('mo-sell-fee').oninput = updateSellProfit;
   openMo('mo-sell');
 }
-function updateSellProfit(c,parts){
-  const sell=+document.getElementById('mo-sell-price').value||0;
-  const fee=+document.getElementById('mo-sell-fee').value||0;
-  const tc=totalCost(c,parts);
-  const pr=sell-tc-fee;
-  const el=document.getElementById('mo-sell-profit');
-  el.textContent=sell?yen(pr):'—';
-  el.style.color=pr>=0?'var(--green)':'var(--red)';
+function updateSellProfit() {
+  const c = STATE.cases[_sellCaseId];
+  if (!c) return;
+  const sell = +document.getElementById('mo-sell-price').value || 0;
+  const fee  = +document.getElementById('mo-sell-fee').value  || 0;
+  const pr = sell - totalCost(c) - fee;
+  const el = document.getElementById('mo-sell-profit');
+  el.textContent = sell ? yen(pr) : '—';
+  el.style.color = pr >= 0 ? 'var(--green)' : 'var(--red)';
 }
-document.getElementById('btn-confirm-sell').addEventListener('click',function(){
-  const sell=+document.getElementById('mo-sell-price').value;
-  if(!sell||sell<1){alert('売値を入力してください');return;}
-  const fee=+document.getElementById('mo-sell-fee').value||5500;
-  const cases=lc();const parts=lp();
-  const c=cases.find(c=>c.id===_sellCaseId);
-  if(!c)return;
-  c.sell=sell;c.fee=fee;c.status='sold';c.soldDate=today();
-  c.log=c.log||[];
-  c.log.push({date:today(),action:`売却 ${yen(sell)} / 純利 ${yen(sell-totalCost(c,parts)-fee)}`});
-  // 組み込みパーツを売却済みに
-  parts.filter(p=>p.caseId===c.id).forEach(p=>{
-    p.status='sold';
-    p.log=p.log||[];
-    p.log.push({date:today(),action:'案件売却により売却済みに'});
-  });
-  sc(cases);sp(parts);
-  closeMo('mo-sell');renderAll();
+document.getElementById('btn-confirm-sell').addEventListener('click', async () => {
+  const sell = +document.getElementById('mo-sell-price').value;
+  if (!sell || sell < 1) { alert('売値を入力してください'); return; }
+  const fee = +document.getElementById('mo-sell-fee').value || 5500;
+  await fbUpdate(`cases/${_sellCaseId}`, { sell, fee, status:'sold', soldDate:today() });
+  // 紐付きパーツを売却済みに
+  const ap = parts().filter(p=>p.caseId===_sellCaseId);
+  await Promise.all(ap.map(p => fbUpdate(`parts/${p.id}`, { status:'sold' })));
+  closeMo('mo-sell');
 });
 
+// ============================================================
 // 削除
-let _delType=null,_delId=null;
-function openDel(type,id){
-  _delType=type;_delId=id;
-  let name='';
-  if(type==='part'){const p=lp().find(p=>p.id===id);name=p?p.name:'このパーツ';}
-  else{const c=lc().find(c=>c.id===id);name=c?c.title:'この案件';}
-  document.getElementById('mo-del-name').textContent=name;
+// ============================================================
+function openDel(type, id) {
+  _delType = type; _delId = id;
+  const name = type==='part'
+    ? (STATE.parts[id]?.name || 'このパーツ')
+    : (STATE.cases[id]?.title || 'この案件');
+  document.getElementById('mo-del-name').textContent = name;
   openMo('mo-del');
 }
-document.getElementById('btn-confirm-del').addEventListener('click',function(){
-  if(_delType==='part'){
-    const parts=lp();sp(parts.filter(p=>p.id!==_delId));
-  }else{
-    const cases=lc();const parts=lp();
-    // 案件削除時は紐付きパーツの caseId をリセット
-    parts.filter(p=>p.caseId===_delId).forEach(p=>{p.caseId=null;p.status='stock';});
-    sp(parts);sc(cases.filter(c=>c.id!==_delId));
+document.getElementById('btn-confirm-del').addEventListener('click', async () => {
+  if (_delType === 'part') {
+    await fbRemove(`parts/${_delId}`);
+  } else {
+    // 案件削除：紐付きパーツを在庫に戻す
+    const ap = parts().filter(p=>p.caseId===_delId);
+    await Promise.all(ap.map(p => fbUpdate(`parts/${p.id}`, { status:'stock', caseId:null })));
+    await fbRemove(`cases/${_delId}`);
   }
-  closeMo('mo-del');renderAll();
+  closeMo('mo-del');
 });
 
 // ============================================================
-// モーダル共通
+// モーダル・タブ
 // ============================================================
-function openMo(id){document.getElementById(id).classList.add('on')}
-function closeMo(id){document.getElementById(id).classList.remove('on')}
+function openMo(id){ document.getElementById(id).classList.add('on'); }
+function closeMo(id){ document.getElementById(id).classList.remove('on'); }
 
-// ============================================================
-// タブ切り替え
-// ============================================================
-document.getElementById('tabs').addEventListener('click',function(e){
-  const t=e.target.closest('.tab');
-  if(t&&t.dataset.panel)swPanel(t.dataset.panel);
+document.getElementById('tabs').addEventListener('click', e => {
+  const t = e.target.closest('.tab');
+  if (t && t.dataset.panel) swPanel(t.dataset.panel);
 });
-function swPanel(id){
-  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on',t.dataset.panel===id));
-  document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('on',p.id==='p-'+id));
-  window.scrollTo({top:0,behavior:'smooth'});
+function swPanel(id) {
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on', t.dataset.panel===id));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('on', p.id==='p-'+id));
+  window.scrollTo({top:0, behavior:'smooth'});
 }
 
-renderAll();
+// グローバルに公開（onclick用）
+Object.assign(window, {
+  quickPartSt, openPartSt, setPartSt, openAttach, attachPart,
+  openCaseSt, setCaseSt, openSell, updateSellProfit,
+  openDel, closeMo, swPanel
+});
+
+// ============================================================
+// 起動
+// ============================================================
+startSync();
+document.getElementById('loading').style.display = 'none';
+document.getElementById('app').style.display = 'block';
+
 </script>
 </body>
 </html>
