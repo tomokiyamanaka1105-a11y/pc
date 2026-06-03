@@ -159,6 +159,11 @@ button,select,input,textarea{font-family:inherit;font-size:14px;-webkit-appearan
 .part-sel-check{width:20px;height:20px;border-radius:50%;border:2px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px}
 .part-sel-check.on{background:var(--accent);border-color:var(--accent);color:#000}
 .part-sel-info{flex:1}.part-sel-name{font-size:13px;font-weight:500}.part-sel-meta{font-size:11px;color:var(--text2);margin-top:2px}
+.bench-block{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:6px}
+.bench-block-title{font-size:10px;font-weight:700;color:var(--accent);letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.bench-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+.bench-item{color:var(--green);font-variant-numeric:tabular-nums}
+.bench-wrap{margin-bottom:8px}
 </style>
 </head>
 <body>
@@ -356,15 +361,60 @@ button,select,input,textarea{font-family:inherit;font-size:14px;-webkit-appearan
         </select>
       </div>
     </div>
-    <div class="form-row">
-      <div class="field"><label>ベンチスコア</label><input id="f-bench" type="text" placeholder="FFXV 6431 / Apex 120FPS"></div>
-      <div class="field"><label>本体の状態</label>
-        <select id="f-cond">
-          <option value="良好">良好</option>
-          <option value="やや傷あり">やや傷あり</option>
-          <option value="傷・汚れあり">傷・汚れあり</option>
-          <option value="難あり">難あり</option>
+    <div class="field"><label>本体の状態</label>
+      <select id="f-cond">
+        <option value="良好">良好</option>
+        <option value="やや傷あり">やや傷あり</option>
+        <option value="傷・汚れあり">傷・汚れあり</option>
+        <option value="難あり">難あり</option>
+      </select>
+    </div>
+    <div class="field-sep">📊 ベンチマーク結果（任意）</div>
+    <div class="bench-wrap">
+      <div style="font-size:10px;font-weight:700;color:var(--accent);margin-bottom:8px">FF14ベンチ</div>
+      <div class="form-row">
+        <div class="field"><label>スコア</label><input id="f-bench-ff14-score" type="number" inputmode="numeric" placeholder="12000" min="0"></div>
+        <div class="field"><label>評価</label>
+          <select id="f-bench-ff14-quality">
+            <option value="">—</option>
+            <option value="非常に快適">非常に快適</option>
+            <option value="とても快適">とても快適</option>
+            <option value="快適">快適</option>
+            <option value="やや快適">やや快適</option>
+            <option value="普通">普通</option>
+            <option value="設定変更を推奨">設定変更を推奨</option>
+          </select>
+        </div>
+      </div>
+      <div class="field"><label>解像度</label>
+        <select id="f-bench-ff14-res">
+          <option value="">—</option>
+          <option value="1920x1080">1920x1080</option>
+          <option value="2560x1440">2560x1440</option>
+          <option value="3840x2160">3840x2160</option>
         </select>
+      </div>
+    </div>
+    <div class="bench-wrap">
+      <div style="font-size:10px;font-weight:700;color:var(--accent);margin-bottom:8px">MotionMark</div>
+      <div class="form-row">
+        <div class="field"><label>スコア</label><input id="f-bench-mm-score" type="number" inputmode="decimal" placeholder="1234.56" step="0.01" min="0"></div>
+        <div class="field"><label>バージョン</label><input id="f-bench-mm-ver" type="text" placeholder="1.3"></div>
+      </div>
+    </div>
+    <div class="bench-wrap">
+      <div style="font-size:10px;font-weight:700;color:var(--accent);margin-bottom:8px">UserBenchmark</div>
+      <div class="form-row">
+        <div class="field"><label>総合(%)</label><input id="f-bench-ubm-total" type="number" inputmode="decimal" placeholder="85.0" step="0.1" min="0"></div>
+        <div class="field"><label>CPU(%)</label><input id="f-bench-ubm-cpu" type="number" inputmode="decimal" placeholder="90.0" step="0.1" min="0"></div>
+      </div>
+      <div class="form-row">
+        <div class="field"><label>GPU(%)</label><input id="f-bench-ubm-gpu" type="number" inputmode="decimal" placeholder="80.0" step="0.1" min="0"></div>
+        <div class="field"><label>RAM(%)</label><input id="f-bench-ubm-ram" type="number" inputmode="decimal" placeholder="75.0" step="0.1" min="0"></div>
+      </div>
+      <div class="form-row">
+        <div class="field"><label>SSD(%)</label><input id="f-bench-ubm-ssd" type="number" inputmode="decimal" placeholder="95.0" step="0.1" min="0"></div>
+        <div class="field"><label>レポートURL</label><input id="f-bench-ubm-url" type="url" placeholder="https://..."></div>
       </div>
     </div>
     <div class="field"><label>メモ</label><textarea id="f-memo" placeholder="電源450W確認済み・メモリ増設必要 など"></textarea></div>
@@ -556,6 +606,48 @@ button,select,input,textarea{font-family:inherit;font-size:14px;-webkit-appearan
         <div class="mo-field"><label>MB</label><input id="edit-pc-mb" type="text" placeholder="B360M"></div>
       </div>
       <div class="mo-field"><label>メモ</label><input id="edit-pc-memo" type="text" placeholder="特記事項など"></div>
+      <div style="font-size:11px;font-weight:600;color:var(--accent);margin:10px 0 8px">📊 ベンチマーク（任意）</div>
+      <div style="font-size:10px;font-weight:700;color:var(--text2);margin-bottom:6px">FF14ベンチ</div>
+      <div class="mo-form-row">
+        <div class="mo-field"><label>スコア</label><input id="edit-bench-ff14-score" type="number" inputmode="numeric" min="0"></div>
+        <div class="mo-field"><label>評価</label>
+          <select id="edit-bench-ff14-quality">
+            <option value="">—</option>
+            <option value="非常に快適">非常に快適</option>
+            <option value="とても快適">とても快適</option>
+            <option value="快適">快適</option>
+            <option value="やや快適">やや快適</option>
+            <option value="普通">普通</option>
+            <option value="設定変更を推奨">設定変更を推奨</option>
+          </select>
+        </div>
+      </div>
+      <div class="mo-field"><label>解像度</label>
+        <select id="edit-bench-ff14-res">
+          <option value="">—</option>
+          <option value="1920x1080">1920x1080</option>
+          <option value="2560x1440">2560x1440</option>
+          <option value="3840x2160">3840x2160</option>
+        </select>
+      </div>
+      <div style="font-size:10px;font-weight:700;color:var(--text2);margin-bottom:6px">MotionMark</div>
+      <div class="mo-form-row">
+        <div class="mo-field"><label>スコア</label><input id="edit-bench-mm-score" type="number" inputmode="decimal" step="0.01" min="0"></div>
+        <div class="mo-field"><label>バージョン</label><input id="edit-bench-mm-ver" type="text"></div>
+      </div>
+      <div style="font-size:10px;font-weight:700;color:var(--text2);margin-bottom:6px">UserBenchmark</div>
+      <div class="mo-form-row">
+        <div class="mo-field"><label>総合(%)</label><input id="edit-bench-ubm-total" type="number" inputmode="decimal" step="0.1" min="0"></div>
+        <div class="mo-field"><label>CPU(%)</label><input id="edit-bench-ubm-cpu" type="number" inputmode="decimal" step="0.1" min="0"></div>
+      </div>
+      <div class="mo-form-row">
+        <div class="mo-field"><label>GPU(%)</label><input id="edit-bench-ubm-gpu" type="number" inputmode="decimal" step="0.1" min="0"></div>
+        <div class="mo-field"><label>RAM(%)</label><input id="edit-bench-ubm-ram" type="number" inputmode="decimal" step="0.1" min="0"></div>
+      </div>
+      <div class="mo-form-row">
+        <div class="mo-field"><label>SSD(%)</label><input id="edit-bench-ubm-ssd" type="number" inputmode="decimal" step="0.1" min="0"></div>
+        <div class="mo-field"><label>レポートURL</label><input id="edit-bench-ubm-url" type="url"></div>
+      </div>
       <div class="btn primary full" id="btn-save-pc-edit" style="margin-top:4px">保存する</div>
     </div>
     <div class="mo-cancel" onclick="closeMo('mo-pc-edit')">キャンセル</div>
@@ -701,6 +793,54 @@ function calcInventoryValue(){
 }
 
 // ============================================================
+// ベンチマーク表示ブロック
+// ============================================================
+function renderBenchBlock(data){
+  const ff14=data.benchFF14||{};
+  const mm=data.benchMM||{};
+  const ubm=data.benchUBM||{};
+  const hasFF14=ff14.score||ff14.quality||ff14.res;
+  const hasMM=mm.score||mm.ver;
+  const hasUBM=ubm.total||ubm.cpu||ubm.gpu||ubm.ram||ubm.ssd;
+  if(!hasFF14&&!hasMM&&!hasUBM)return'';
+  let html='<div style="margin-bottom:8px">';
+  if(hasFF14){
+    html+=`<div class="bench-block">
+      <div class="bench-block-title">📊 FF14ベンチ</div>
+      <div class="bench-grid">
+        ${ff14.score?`<div class="spec-item"><div class="spec-lbl">スコア</div><div class="spec-val">${Number(ff14.score).toLocaleString()}</div></div>`:''}
+        ${ff14.quality?`<div class="spec-item"><div class="spec-lbl">評価</div><div class="spec-val">${ff14.quality}</div></div>`:''}
+        ${ff14.res?`<div class="spec-item"><div class="spec-lbl">解像度</div><div class="spec-val">${ff14.res}</div></div>`:''}
+      </div>
+    </div>`;
+  }
+  if(hasMM){
+    html+=`<div class="bench-block">
+      <div class="bench-block-title">🌀 MotionMark</div>
+      <div class="bench-grid">
+        ${mm.score?`<div class="spec-item"><div class="spec-lbl">スコア</div><div class="spec-val">${mm.score}</div></div>`:''}
+        ${mm.ver?`<div class="spec-item"><div class="spec-lbl">バージョン</div><div class="spec-val">${mm.ver}</div></div>`:''}
+      </div>
+    </div>`;
+  }
+  if(hasUBM){
+    html+=`<div class="bench-block">
+      <div class="bench-block-title">🏆 UserBenchmark</div>
+      <div class="bench-grid">
+        ${ubm.total?`<div class="spec-item"><div class="spec-lbl">総合</div><div class="spec-val">${ubm.total}%</div></div>`:''}
+        ${ubm.cpu?`<div class="spec-item"><div class="spec-lbl">CPU</div><div class="spec-val">${ubm.cpu}%</div></div>`:''}
+        ${ubm.gpu?`<div class="spec-item"><div class="spec-lbl">GPU</div><div class="spec-val">${ubm.gpu}%</div></div>`:''}
+        ${ubm.ram?`<div class="spec-item"><div class="spec-lbl">RAM</div><div class="spec-val">${ubm.ram}%</div></div>`:''}
+        ${ubm.ssd?`<div class="spec-item"><div class="spec-lbl">SSD</div><div class="spec-val">${ubm.ssd}%</div></div>`:''}
+        ${ubm.url?`<div class="spec-item" style="grid-column:1/-1"><div class="spec-lbl">レポート</div><div class="spec-val"><a href="${ubm.url}" target="_blank" style="color:var(--accent);font-size:11px">リンク →</a></div></div>`:''}
+      </div>
+    </div>`;
+  }
+  html+='</div>';
+  return html;
+}
+
+// ============================================================
 // レンダリング
 // ============================================================
 function renderAll(){
@@ -795,6 +935,7 @@ function pcCardFull(pc){
     </div>
     ${specItems.length?`<div class="spec-grid">${specItems.map(([l,v])=>`<div class="spec-item"><div class="spec-lbl">${l}</div><div class="spec-val">${v}</div></div>`).join('')}</div>`:''}
     ${pc.memo?`<div style="font-size:11px;color:var(--text2);margin-bottom:8px">${pc.memo}</div>`:''}
+    ${renderBenchBlock(pc)}
     ${pl.length?`
       <div class="pc-parts-list">
         <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:6px">搭載パーツ価格振り分け</div>
@@ -868,6 +1009,7 @@ function caseHTML(c,full){
       ${c.sell?`<span class="chip ch-sell">売値 ${yen(c.sell)}</span>`:c.listPrice?`<span class="chip ch-sell">出品予定 ${yen(c.listPrice)}</span>`:''}
     </div>
     ${c.bench?`<div style="font-size:11px;color:var(--accent);margin-bottom:6px">📊 ${c.bench}</div>`:''}
+    ${renderBenchBlock(c)}
     <div class="ccase-foot">
       ${pr!==null?`<span class="${pr>=0?'p-pos':'p-neg'}">純利 ${yen(pr)}</span>`
         :ep!==null?`<span style="font-size:12px;color:var(--text2)">見込み ${yen(ep)}</span>`
@@ -995,6 +1137,18 @@ function openPcEdit(id){
   Object.entries(fields).forEach(([id,val])=>{const el=document.getElementById(id);if(el)el.value=val;});
   document.getElementById('edit-pc-status').value=pc.status||'stock';
   document.getElementById('edit-pc-cond').value=pc.cond||'動作確認済み';
+  const ff14=pc.benchFF14||{};const mm=pc.benchMM||{};const ubm=pc.benchUBM||{};
+  document.getElementById('edit-bench-ff14-score').value=ff14.score||'';
+  document.getElementById('edit-bench-ff14-quality').value=ff14.quality||'';
+  document.getElementById('edit-bench-ff14-res').value=ff14.res||'';
+  document.getElementById('edit-bench-mm-score').value=mm.score||'';
+  document.getElementById('edit-bench-mm-ver').value=mm.ver||'';
+  document.getElementById('edit-bench-ubm-total').value=ubm.total||'';
+  document.getElementById('edit-bench-ubm-cpu').value=ubm.cpu||'';
+  document.getElementById('edit-bench-ubm-gpu').value=ubm.gpu||'';
+  document.getElementById('edit-bench-ubm-ram').value=ubm.ram||'';
+  document.getElementById('edit-bench-ubm-ssd').value=ubm.ssd||'';
+  document.getElementById('edit-bench-ubm-url').value=ubm.url||'';
   openMo('mo-pc-edit');
 }
 document.getElementById('btn-save-pc-edit').addEventListener('click',async()=>{
@@ -1014,6 +1168,9 @@ document.getElementById('btn-save-pc-edit').addEventListener('click',async()=>{
     psu:document.getElementById('edit-pc-psu').value,
     mb:document.getElementById('edit-pc-mb').value,
     memo:document.getElementById('edit-pc-memo').value,
+    benchFF14:{score:+document.getElementById('edit-bench-ff14-score').value||null,quality:document.getElementById('edit-bench-ff14-quality').value||null,res:document.getElementById('edit-bench-ff14-res').value||null},
+    benchMM:{score:+document.getElementById('edit-bench-mm-score').value||null,ver:document.getElementById('edit-bench-mm-ver').value||null},
+    benchUBM:{total:+document.getElementById('edit-bench-ubm-total').value||null,cpu:+document.getElementById('edit-bench-ubm-cpu').value||null,gpu:+document.getElementById('edit-bench-ubm-gpu').value||null,ram:+document.getElementById('edit-bench-ubm-ram').value||null,ssd:+document.getElementById('edit-bench-ubm-ssd').value||null,url:document.getElementById('edit-bench-ubm-url').value||null},
   });
   closeMo('mo-pc-edit');
 });
@@ -1205,10 +1362,14 @@ document.getElementById('btn-add-case').addEventListener('click',async()=>{
     cpu:document.getElementById('f-cpu').value,gpu:document.getElementById('f-gpu').value,
     ram:document.getElementById('f-ram').value,ssd:document.getElementById('f-ssd').value,
     psu:document.getElementById('f-psu').value,os:document.getElementById('f-os').value,
-    bench:document.getElementById('f-bench').value,cond:document.getElementById('f-cond').value,
-    memo:document.getElementById('f-memo').value,date:today(),doneDate:null,
+    cond:document.getElementById('f-cond').value,
+    memo:document.getElementById('f-memo').value,
+    benchFF14:{score:+document.getElementById('f-bench-ff14-score').value||null,quality:document.getElementById('f-bench-ff14-quality').value||null,res:document.getElementById('f-bench-ff14-res').value||null},
+    benchMM:{score:+document.getElementById('f-bench-mm-score').value||null,ver:document.getElementById('f-bench-mm-ver').value||null},
+    benchUBM:{total:+document.getElementById('f-bench-ubm-total').value||null,cpu:+document.getElementById('f-bench-ubm-cpu').value||null,gpu:+document.getElementById('f-bench-ubm-gpu').value||null,ram:+document.getElementById('f-bench-ubm-ram').value||null,ssd:+document.getElementById('f-bench-ubm-ssd').value||null,url:document.getElementById('f-bench-ubm-url').value||null},
+    date:today(),doneDate:null,
   });
-  ['f-title','f-buy','f-cpu','f-gpu','f-ram','f-ssd','f-psu','f-bench','f-memo'].forEach(i=>document.getElementById(i).value='');
+  ['f-title','f-buy','f-cpu','f-gpu','f-ram','f-ssd','f-psu','f-memo','f-bench-ff14-score','f-bench-ff14-quality','f-bench-ff14-res','f-bench-mm-score','f-bench-mm-ver','f-bench-ubm-total','f-bench-ubm-cpu','f-bench-ubm-gpu','f-bench-ubm-ram','f-bench-ubm-ssd','f-bench-ubm-url'].forEach(i=>document.getElementById(i).value='');
   document.getElementById('f-ship').value='0';document.getElementById('f-list-price').value='0';
   document.getElementById('f-fee').value='5500';document.getElementById('f-status').value='watch';
   swPanel('cases');
