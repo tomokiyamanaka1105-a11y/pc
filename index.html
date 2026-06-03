@@ -159,6 +159,24 @@ button,select,input,textarea{font-family:inherit;font-size:14px;-webkit-appearan
 .part-sel-check{width:20px;height:20px;border-radius:50%;border:2px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px}
 .part-sel-check.on{background:var(--accent);border-color:var(--accent);color:#000}
 .part-sel-info{flex:1}.part-sel-name{font-size:13px;font-weight:500}.part-sel-meta{font-size:11px;color:var(--text2);margin-top:2px}
+/* AIチャット */
+.chat-bubble{border-radius:10px;padding:11px 14px;font-size:13px;line-height:1.7;max-width:100%}
+.chat-user{background:var(--accent);color:#000;align-self:flex-end;border-radius:10px 10px 2px 10px;font-weight:500}
+.chat-ai-wrap{align-self:flex-start;width:100%}
+.ai-tab-bar{display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap}
+.ai-tab-btn{font-size:10px;font-weight:700;padding:3px 10px;border-radius:10px;border:1px solid var(--border);background:var(--bg3);cursor:pointer;color:var(--text2)}
+.ai-tab-btn.active-claude{background:#00d4aa22;color:var(--accent);border-color:var(--accent)}
+.ai-tab-btn.active-gpt{background:#74aa9c22;color:#74aa9c;border-color:#74aa9c}
+.ai-tab-btn.active-gemini{background:#4285f422;color:#7baaf7;border-color:#4285f4}
+.ai-tab-btn.active-verdict{background:#ff99ff22;color:#ff99ff;border-color:#ff66ff}
+.ai-panel{display:none}.ai-panel.on{display:block}
+.verdict-card{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:6px}
+.verdict-title{font-size:10px;font-weight:700;color:var(--accent);margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em}
+.key-point{background:var(--bg4);border-radius:5px;padding:5px 9px;font-size:12px;margin-bottom:4px}
+.confidence-badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:8px;font-size:10px;font-weight:700}
+.conf-high{background:#00c87a22;color:#44ddaa}.conf-mid{background:#ffaa0022;color:#ffcc66}.conf-low{background:#ff446622;color:#ff9999}
+.phase-indicator{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-size:12px;color:var(--text2);animation:pulse 1.5s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}
 .bench-block{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:6px}
 .bench-block-title{font-size:10px;font-weight:700;color:var(--accent);letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;gap:6px}
 .bench-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px}
@@ -188,6 +206,7 @@ button,select,input,textarea{font-family:inherit;font-size:14px;-webkit-appearan
   <div class="tab" data-panel="add-pc">＋ PC登録</div>
   <div class="tab" data-panel="add-part">＋ パーツ登録</div>
   <div class="tab" data-panel="add-case">＋ 案件登録</div>
+  <div class="tab" data-panel="chat">💬 AIチャット</div>
   <div class="tab" data-panel="policy">仕入れ方針</div>
 </div>
 
@@ -424,6 +443,26 @@ button,select,input,textarea{font-family:inherit;font-size:14px;-webkit-appearan
     <div class="field"><label>メモ</label><textarea id="f-memo" placeholder="電源450W確認済み・メモリ増設必要 など"></textarea></div>
     <div class="btn primary full" id="btn-add-case">案件を登録する</div>
   </div>
+</div>
+
+<!-- AIチャット -->
+<div id="p-chat" class="panel">
+
+  <div id="chat-log" style="display:flex;flex-direction:column;gap:12px;margin-bottom:16px;min-height:200px"></div>
+
+  <div style="position:sticky;bottom:80px;background:var(--bg);padding:10px 0 0">
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:10px 12px">
+      <textarea id="chat-input" placeholder="例：i5-9400F / GTX1660S / 16GB / SSD512GB のPCが13,800円。仕入れていい？"
+        style="width:100%;background:transparent;border:none;color:var(--text);font-size:14px;resize:none;outline:none;line-height:1.6;max-height:120px;overflow-y:auto"
+        rows="2" oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"
+        onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChat();}"></textarea>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">
+        <span style="font-size:10px;color:var(--text3)">Shift+Enterで改行</span>
+        <div class="btn sm primary" style="flex:none;min-width:80px" onclick="sendChat()">送信 ➤</div>
+      </div>
+    </div>
+  </div>
+
 </div>
 
 <!-- 仕入れ方針 -->
@@ -1579,7 +1618,177 @@ Object.assign(window,{
   togglePartSel,openPartsMgr,openCaseSt,setCaseSt,setWonSt,
   openSell,updateSellProfit,onPlatformChange,onShipSelChange,
   openDel,closeMo,swPanel,openBudgetMo,fetchUBM,
+  sendChat,switchAiTab,
 });
+
+// ============================================================
+// AIチャット
+// ============================================================
+let chatHistory = [];
+let chatActive = false;
+
+function sendChat() {
+  if (chatActive) return;
+  const input = document.getElementById('chat-input');
+  const question = input.value.trim();
+  if (!question) return;
+  input.value = '';
+  input.style.height = 'auto';
+  chatActive = true;
+  appendUserBubble(question);
+  const thinkBubble = appendThinkBubble();
+  runDebate(question, thinkBubble);
+}
+
+function appendUserBubble(text) {
+  const log = document.getElementById('chat-log');
+  const el = document.createElement('div');
+  el.className = 'chat-bubble chat-user';
+  el.textContent = text;
+  log.appendChild(el);
+  el.scrollIntoView({ behavior: 'smooth', block: 'end' });
+}
+
+function appendThinkBubble() {
+  const log = document.getElementById('chat-log');
+  const el = document.createElement('div');
+  el.className = 'chat-ai-wrap';
+  el.innerHTML = '<div class="phase-indicator">⏳ 準備中...</div>';
+  log.appendChild(el);
+  el.scrollIntoView({ behavior: 'smooth', block: 'end' });
+  return el;
+}
+
+async function runDebate(question, bubble) {
+  try {
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ question, history: chatHistory }),
+    });
+
+    if (!res.ok) throw new Error('API error ' + res.status);
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    let answers = {};
+    let debates = {};
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop();
+
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        let data;
+        try { data = JSON.parse(line.slice(6)); } catch { continue; }
+
+        if (['search','thinking','debate','judging'].includes(data.phase)) {
+          bubble.innerHTML = `<div class="phase-indicator">${data.message}</div>`;
+          bubble.scrollIntoView({ behavior: 'smooth', block: 'end' });
+        }
+        if (data.phase === 'answers') answers = { claude: data.claude, gpt: data.gpt, gemini: data.gemini };
+        if (data.phase === 'debate_result') debates = { claude: data.claude, gpt: data.gpt, gemini: data.gemini };
+        if (data.phase === 'verdict') {
+          renderResult(bubble, answers, debates, data.verdict);
+          bubble.scrollIntoView({ behavior: 'smooth', block: 'end' });
+        }
+        if (data.phase === 'done') {
+          chatHistory.push({ role: 'user', content: question });
+          chatHistory.push({ role: 'assistant', content: '' });
+          if (chatHistory.length > 20) chatHistory = chatHistory.slice(-20);
+          chatActive = false;
+        }
+        if (data.phase === 'error') {
+          bubble.innerHTML = `<div class="chat-bubble" style="background:var(--bg3);color:var(--red)">❌ エラー: ${data.message}</div>`;
+          chatActive = false;
+        }
+      }
+    }
+  } catch (e) {
+    bubble.innerHTML = `<div class="chat-bubble" style="background:var(--bg3);color:var(--red)">❌ ${e.message}</div>`;
+    chatActive = false;
+  }
+}
+
+function renderResult(bubble, answers, debates, verdict) {
+  const v = verdict || {};
+  const confCls = v.confidence === '高' ? 'conf-high' : v.confidence === '低' ? 'conf-low' : 'conf-mid';
+  const uid = Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
+
+  bubble.innerHTML = `
+    <div class="chat-ai-wrap">
+      <div class="ai-tab-bar">
+        <div class="ai-tab-btn active-claude" onclick="switchAiTab(this,'${uid}-claude')">🟢 Claude</div>
+        <div class="ai-tab-btn" onclick="switchAiTab(this,'${uid}-gpt')">⚪ GPT-4o</div>
+        <div class="ai-tab-btn" onclick="switchAiTab(this,'${uid}-gemini')">🔵 Gemini</div>
+        <div class="ai-tab-btn" onclick="switchAiTab(this,'${uid}-verdict')">⚖️ 結論</div>
+      </div>
+      <div class="ai-panel on" data-tab="${uid}-claude">
+        <div class="verdict-card">
+          <div class="verdict-title">🟢 Claude — 初回回答</div>
+          <div style="font-size:12px;color:var(--text2);line-height:1.7">${answers.claude||''}</div>
+        </div>
+        <div class="verdict-card">
+          <div class="verdict-title">⚔️ ディベート後</div>
+          <div style="font-size:12px;color:var(--text);line-height:1.7">${debates.claude||''}</div>
+        </div>
+      </div>
+      <div class="ai-panel" data-tab="${uid}-gpt">
+        <div class="verdict-card">
+          <div class="verdict-title">⚪ GPT-4o — 初回回答</div>
+          <div style="font-size:12px;color:var(--text2);line-height:1.7">${answers.gpt||''}</div>
+        </div>
+        <div class="verdict-card">
+          <div class="verdict-title">⚔️ ディベート後</div>
+          <div style="font-size:12px;color:var(--text);line-height:1.7">${debates.gpt||''}</div>
+        </div>
+      </div>
+      <div class="ai-panel" data-tab="${uid}-gemini">
+        <div class="verdict-card">
+          <div class="verdict-title">🔵 Gemini — 初回回答</div>
+          <div style="font-size:12px;color:var(--text2);line-height:1.7">${answers.gemini||''}</div>
+        </div>
+        <div class="verdict-card">
+          <div class="verdict-title">⚔️ ディベート後</div>
+          <div style="font-size:12px;color:var(--text);line-height:1.7">${debates.gemini||''}</div>
+        </div>
+      </div>
+      <div class="ai-panel" data-tab="${uid}-verdict">
+        ${v.consensus?`<div class="verdict-card"><div class="verdict-title">🤝 3AI共通見解</div><div style="font-size:13px;line-height:1.7">${v.consensus}</div></div>`:''}
+        ${v.keyPoints?.length?`<div class="verdict-card"><div class="verdict-title">📌 重要ポイント</div>${v.keyPoints.map(p=>`<div class="key-point">• ${p}</div>`).join('')}</div>`:''}
+        <div class="verdict-card" style="border-color:var(--accent)">
+          <div class="verdict-title">✅ 最終結論
+            <span class="confidence-badge ${confCls}" style="margin-left:8px">確信度：${v.confidence||'中'}</span>
+          </div>
+          <div style="font-size:14px;font-weight:600;line-height:1.8;color:var(--text)">${v.conclusion||''}</div>
+        </div>
+        ${v.caution?`<div class="verdict-card" style="border-color:var(--amber)"><div class="verdict-title" style="color:var(--amber)">⚠️ 注意点</div><div style="font-size:12px;color:var(--amber);line-height:1.7">${v.caution}</div></div>`:''}
+      </div>
+    </div>
+  `;
+  setTimeout(() => {
+    const verdictBtn = bubble.querySelector('.ai-tab-bar .ai-tab-btn:last-child');
+    if (verdictBtn) verdictBtn.click();
+  }, 200);
+}
+
+function switchAiTab(btn, tabId) {
+  const wrap = btn.closest('.chat-ai-wrap');
+  wrap.querySelectorAll('.ai-tab-btn').forEach(b => b.className = 'ai-tab-btn');
+  wrap.querySelectorAll('.ai-panel').forEach(p => p.classList.remove('on'));
+  const cls = tabId.endsWith('-claude') ? 'active-claude'
+    : tabId.endsWith('-gpt') ? 'active-gpt'
+    : tabId.endsWith('-gemini') ? 'active-gemini'
+    : 'active-verdict';
+  btn.classList.add(cls);
+  const panel = wrap.querySelector(`[data-tab="${tabId}"]`);
+  if (panel) panel.classList.add('on');
+}
 
 // 初期化
 buildPcPartsTable();

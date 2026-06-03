@@ -2,6 +2,9 @@
   "functions": {
     "api/ubm-fetch.js": {
       "runtime": "edge"
+    },
+    "api/chat.js": {
+      "runtime": "edge"
     }
   }
 }
