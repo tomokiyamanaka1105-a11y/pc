@@ -455,7 +455,7 @@ button,select,input,textarea{font-family:inherit;font-size:14px;-webkit-appearan
       <textarea id="chat-input" placeholder="例：i5-9400F / GTX1660S / 16GB / SSD512GB のPCが13,800円。仕入れていい？"
         style="width:100%;background:transparent;border:none;color:var(--text);font-size:14px;resize:none;outline:none;line-height:1.6;max-height:120px;overflow-y:auto"
         rows="2" oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"
-        onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChat();}"></textarea>
+        onkeydown="if(event.key==='Enter'&&!event.shiftKey&&!event.isComposing){event.preventDefault();sendChat();}"></textarea>
       <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">
         <span style="font-size:10px;color:var(--text3)">Shift+Enterで改行</span>
         <div id="chat-send-btn" class="btn sm primary" style="flex:none;min-width:80px" onclick="sendChat()">送信 ➤</div>
