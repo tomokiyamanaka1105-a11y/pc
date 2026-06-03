@@ -871,7 +871,7 @@ async function fetchUBM(ctx) {
 
     const setVal = (id, val) => {
       const el = document.getElementById(`${prefix}-ubm-${id}`);
-      if (el && val != null) el.value = val;
+      if (el && val != null && val !== '') el.value = val;
     };
     setVal('total', data.total);
     setVal('cpu',   data.cpu);
@@ -879,8 +879,14 @@ async function fetchUBM(ctx) {
     setVal('ram',   data.ram);
     setVal('ssd',   data.ssd);
 
-    statusEl.style.color = 'var(--green)';
-    statusEl.innerHTML = `✅ 取得完了<br><span style="color:var(--text2);line-height:1.7">${data.comment || ''}</span>`;
+    const filledCount = [data.total, data.cpu, data.gpu, data.ram, data.ssd].filter(v => v != null && v !== '').length;
+    if (filledCount === 0) {
+      statusEl.style.color = 'var(--amber)';
+      statusEl.innerHTML = `⚠ スコアを自動取得できませんでした。手動で入力してください。<br><span style="color:var(--text2);font-size:10px">（UserBenchmarkがサーバーアクセスをブロックしている可能性があります）</span>${data.comment ? `<br><span style="color:var(--text2);line-height:1.7">${data.comment}</span>` : ''}`;
+    } else {
+      statusEl.style.color = 'var(--green)';
+      statusEl.innerHTML = `✅ 取得完了（${filledCount}項目）<br><span style="color:var(--text2);line-height:1.7">${data.comment || ''}</span>`;
+    }
 
     const nameParts = [data.cpu_name, data.gpu_name, data.ram_name, data.ssd_name].filter(Boolean);
     if (nameParts.length && ctx === 'case') {
