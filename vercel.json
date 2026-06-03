@@ -1,10 +1,10 @@
 {
   "functions": {
     "api/ubm-fetch.js": {
-      "runtime": "edge"
+      "maxDuration": 30
     },
     "api/chat.js": {
-      "runtime": "edge"
+      "maxDuration": 60
     }
   }
 }
