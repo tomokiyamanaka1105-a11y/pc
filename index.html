@@ -458,7 +458,7 @@ button,select,input,textarea{font-family:inherit;font-size:14px;-webkit-appearan
         onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChat();}"></textarea>
       <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">
         <span style="font-size:10px;color:var(--text3)">Shift+Enterで改行</span>
-        <div class="btn sm primary" style="flex:none;min-width:80px" onclick="sendChat()">送信 ➤</div>
+        <div id="chat-send-btn" class="btn sm primary" style="flex:none;min-width:80px" onclick="sendChat()">送信 ➤</div>
       </div>
     </div>
   </div>
@@ -857,46 +857,82 @@ async function fetchUBM(ctx) {
 
   statusEl.style.display = 'block';
   statusEl.style.color = 'var(--text2)';
-  statusEl.textContent = '⏳ 取得中...';
+  statusEl.textContent = '⏳ ページを取得中...';
+
+  let html = null;
+
+  // ブラウザから直接CORSプロキシ経由で取得（Cloudflareを回避）
+  const proxies = [
+    `https://corsproxy.io/?${encodeURIComponent(url)}`,
+    `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+  ];
+  for (const proxyUrl of proxies) {
+    try {
+      const r = await fetch(proxyUrl);
+      if (r.ok) { html = await r.text(); break; }
+    } catch { /* 次のプロキシを試す */ }
+  }
 
   try {
+    // HTML取得成功 → サーバーへ送ってClaudeで解析
+    if (html) {
+      statusEl.textContent = '⏳ AIがスコアを解析中...';
+      const res = await fetch('/api/ubm-fetch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ html: html.substring(0, 50000) }),
+      });
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      applyUBMData(data, prefix, ctx, statusEl, url);
+      return;
+    }
+
+    // プロキシも失敗 → サーバー直接フェッチ（最終手段）
+    statusEl.textContent = '⏳ サーバー経由で再試行中...';
     const res = await fetch('/api/ubm-fetch', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ url }),
     });
-
     const data = await res.json();
     if (data.error) throw new Error(data.error);
-
-    const setVal = (id, val) => {
-      const el = document.getElementById(`${prefix}-ubm-${id}`);
-      if (el && val != null && val !== '') el.value = val;
-    };
-    setVal('total', data.total);
-    setVal('cpu',   data.cpu);
-    setVal('gpu',   data.gpu);
-    setVal('ram',   data.ram);
-    setVal('ssd',   data.ssd);
-
-    const filledCount = [data.total, data.cpu, data.gpu, data.ram, data.ssd].filter(v => v != null && v !== '').length;
-    if (filledCount === 0) {
-      statusEl.style.color = 'var(--amber)';
-      statusEl.innerHTML = `⚠ スコアを自動取得できませんでした。手動で入力してください。<br><span style="color:var(--text2);font-size:10px">（UserBenchmarkがサーバーアクセスをブロックしている可能性があります）</span>${data.comment ? `<br><span style="color:var(--text2);line-height:1.7">${data.comment}</span>` : ''}`;
-    } else {
-      statusEl.style.color = 'var(--green)';
-      statusEl.innerHTML = `✅ 取得完了（${filledCount}項目）<br><span style="color:var(--text2);line-height:1.7">${data.comment || ''}</span>`;
-    }
-
-    const nameParts = [data.cpu_name, data.gpu_name, data.ram_name, data.ssd_name].filter(Boolean);
-    if (nameParts.length && ctx === 'case') {
-      const memoEl = document.getElementById('f-memo');
-      if (memoEl && !memoEl.value) memoEl.value = nameParts.join(' / ');
-    }
+    applyUBMData(data, prefix, ctx, statusEl, url);
 
   } catch (e) {
-    statusEl.style.color = 'var(--red)';
-    statusEl.textContent = `❌ 取得失敗: ${e.message}`;
+    statusEl.style.color = 'var(--amber)';
+    statusEl.innerHTML = `⚠ 自動取得できませんでした。<br>
+      <a href="${url}" target="_blank" style="color:var(--accent);text-decoration:underline">← URLを開いてスコアを確認</a> し、手動で入力してください。`;
+  }
+}
+
+function applyUBMData(data, prefix, ctx, statusEl, url) {
+  const setVal = (id, val) => {
+    const el = document.getElementById(`${prefix}-ubm-${id}`);
+    if (el && val != null && val !== '') el.value = val;
+  };
+  setVal('total', data.total);
+  setVal('cpu',   data.cpu);
+  setVal('gpu',   data.gpu);
+  setVal('ram',   data.ram);
+  setVal('ssd',   data.ssd);
+
+  const filledCount = [data.total, data.cpu, data.gpu, data.ram, data.ssd]
+    .filter(v => v != null && v !== '').length;
+
+  if (filledCount === 0) {
+    statusEl.style.color = 'var(--amber)';
+    statusEl.innerHTML = `⚠ スコアを取得できませんでした。<br>
+      <a href="${url}" target="_blank" style="color:var(--accent);text-decoration:underline">URLを開いて確認</a> し手動入力してください。${data.comment ? `<br><span style="color:var(--text2);line-height:1.7">${data.comment}</span>` : ''}`;
+  } else {
+    statusEl.style.color = 'var(--green)';
+    statusEl.innerHTML = `✅ 取得完了（${filledCount}項目）<br><span style="color:var(--text2);line-height:1.7">${data.comment || ''}</span>`;
+  }
+
+  const nameParts = [data.cpu_name, data.gpu_name, data.ram_name, data.ssd_name].filter(Boolean);
+  if (nameParts.length && ctx === 'case') {
+    const memoEl = document.getElementById('f-memo');
+    if (memoEl && !memoEl.value) memoEl.value = nameParts.join(' / ');
   }
 }
 
@@ -1623,8 +1659,8 @@ Object.assign(window,{
   quickPartSt,detachPart,openPartSt,setPartSt,openAttachToPc,attachPartToPc,
   togglePartSel,openPartsMgr,openCaseSt,setCaseSt,setWonSt,
   openSell,updateSellProfit,onPlatformChange,onShipSelChange,
-  openDel,closeMo,swPanel,openBudgetMo,fetchUBM,
-  sendChat,switchAiTab,
+  openDel,closeMo,swPanel,openBudgetMo,fetchUBM,applyUBMData,
+  sendChat,stopChat,switchAiTab,
 });
 
 // ============================================================
@@ -1632,6 +1668,31 @@ Object.assign(window,{
 // ============================================================
 let chatHistory = [];
 let chatActive = false;
+let chatAbortController = null;
+
+function setChatBtnState(active) {
+  const btn = document.getElementById('chat-send-btn');
+  if (!btn) return;
+  if (active) {
+    btn.textContent = '⏹ 停止';
+    btn.style.background = 'var(--red)';
+    btn.style.borderColor = 'var(--red)';
+    btn.style.color = '#fff';
+    btn.onclick = stopChat;
+  } else {
+    btn.textContent = '送信 ➤';
+    btn.style.background = '';
+    btn.style.borderColor = '';
+    btn.style.color = '';
+    btn.onclick = sendChat;
+  }
+}
+
+function stopChat() {
+  if (chatAbortController) chatAbortController.abort();
+  chatActive = false;
+  setChatBtnState(false);
+}
 
 function sendChat() {
   if (chatActive) return;
@@ -1641,6 +1702,8 @@ function sendChat() {
   input.value = '';
   input.style.height = 'auto';
   chatActive = true;
+  chatAbortController = new AbortController();
+  setChatBtnState(true);
   appendUserBubble(question);
   const thinkBubble = appendThinkBubble();
   runDebate(question, thinkBubble);
@@ -1671,6 +1734,7 @@ async function runDebate(question, bubble) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ question, history: chatHistory }),
+      signal: chatAbortController?.signal,
     });
 
     if (!res.ok) throw new Error('API error ' + res.status);
@@ -1682,6 +1746,11 @@ async function runDebate(question, bubble) {
     let debates = {};
 
     while (true) {
+      if (chatAbortController?.signal.aborted) {
+        reader.cancel();
+        bubble.innerHTML = `<div class="chat-bubble" style="background:var(--bg3);color:var(--text2)">⏹ 停止しました</div>`;
+        break;
+      }
       const { done, value } = await reader.read();
       if (done) break;
       buffer += decoder.decode(value, { stream: true });
@@ -1705,19 +1774,25 @@ async function runDebate(question, bubble) {
         }
         if (data.phase === 'done') {
           chatHistory.push({ role: 'user', content: question });
+          chatHistory.push({ role: 'user', content: question });
           chatHistory.push({ role: 'assistant', content: '' });
           if (chatHistory.length > 20) chatHistory = chatHistory.slice(-20);
           chatActive = false;
+          setChatBtnState(false);
         }
         if (data.phase === 'error') {
           bubble.innerHTML = `<div class="chat-bubble" style="background:var(--bg3);color:var(--red)">❌ エラー: ${data.message}</div>`;
           chatActive = false;
+          setChatBtnState(false);
         }
       }
     }
   } catch (e) {
-    bubble.innerHTML = `<div class="chat-bubble" style="background:var(--bg3);color:var(--red)">❌ ${e.message}</div>`;
+    if (e.name !== 'AbortError') {
+      bubble.innerHTML = `<div class="chat-bubble" style="background:var(--bg3);color:var(--red)">❌ ${e.message}</div>`;
+    }
     chatActive = false;
+    setChatBtnState(false);
   }
 }
 

@@ -97,7 +97,27 @@ export default async function handler(req) {
     return new Response('Method Not Allowed', { status: 405 });
   }
 
-  const { url } = await req.json();
+  const body = await req.json();
+  const { url, html: preHtml } = body;
+
+  // ブラウザからHTMLが直接渡された場合はそのまま使う
+  if (preHtml) {
+    try {
+      const regexScores = extractScoresFromHtml(preHtml);
+      const claudeRaw = await callClaude(preHtml);
+      let claudeData;
+      try { claudeData = JSON.parse(claudeRaw.replace(/```json|```/g, '').trim()); } catch { claudeData = {}; }
+      const merged = { ...claudeData };
+      for (const [k, v] of Object.entries(regexScores)) { if (v != null) merged[k] = v; }
+      return new Response(JSON.stringify(merged), {
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+      });
+    } catch (e) {
+      return new Response(JSON.stringify({ error: e.message }), {
+        status: 500, headers: { 'Content-Type': 'application/json' },
+      });
+    }
+  }
 
   if (!url || !url.includes('userbenchmark.com')) {
     return new Response(JSON.stringify({ error: 'Invalid URL' }), {
