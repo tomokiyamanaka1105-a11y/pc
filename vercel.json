@@ -1,0 +1,7 @@
+{
+  "functions": {
+    "api/ubm-fetch.js": {
+      "runtime": "edge"
+    }
+  }
+}

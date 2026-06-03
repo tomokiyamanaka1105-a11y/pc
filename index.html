@@ -416,6 +416,10 @@ button,select,input,textarea{font-family:inherit;font-size:14px;-webkit-appearan
         <div class="field"><label>SSD(%)</label><input id="f-bench-ubm-ssd" type="number" inputmode="decimal" placeholder="95.0" step="0.1" min="0"></div>
         <div class="field"><label>レポートURL</label><input id="f-bench-ubm-url" type="url" placeholder="https://..."></div>
       </div>
+      <div style="display:flex;gap:8px;margin-top:6px">
+        <div class="btn sm accent" id="btn-fetch-ubm-case" onclick="fetchUBM('case')">🔍 URLからスコアを自動取得</div>
+      </div>
+      <div id="ubm-fetch-status-case" style="font-size:11px;color:var(--text2);margin-top:6px;display:none"></div>
     </div>
     <div class="field"><label>メモ</label><textarea id="f-memo" placeholder="電源450W確認済み・メモリ増設必要 など"></textarea></div>
     <div class="btn primary full" id="btn-add-case">案件を登録する</div>
@@ -648,6 +652,10 @@ button,select,input,textarea{font-family:inherit;font-size:14px;-webkit-appearan
         <div class="mo-field"><label>SSD(%)</label><input id="edit-bench-ubm-ssd" type="number" inputmode="decimal" step="0.1" min="0"></div>
         <div class="mo-field"><label>レポートURL</label><input id="edit-bench-ubm-url" type="url"></div>
       </div>
+      <div style="display:flex;gap:8px;margin-top:6px">
+        <div class="btn sm accent" onclick="fetchUBM('edit')">🔍 URLからスコアを自動取得</div>
+      </div>
+      <div id="ubm-fetch-status-edit" style="font-size:11px;color:var(--text2);margin-top:6px;display:none"></div>
       <div class="btn primary full" id="btn-save-pc-edit" style="margin-top:4px">保存する</div>
     </div>
     <div class="mo-cancel" onclick="closeMo('mo-pc-edit')">キャンセル</div>
@@ -790,6 +798,61 @@ function calcInventoryValue(){
   // PC在庫に組み込み済み（attachedPcId あり）は pcCost に含まれているので除外
   const partVal=parts().filter(p=>!['used','sold'].includes(p.status)&&!p.attachedPcId).reduce((s,p)=>s+partCost(p),0);
   return {pcVal,partVal,total:pcVal+partVal};
+}
+
+// ============================================================
+// UserBenchmark スコア自動取得
+// ============================================================
+async function fetchUBM(ctx) {
+  const prefix = ctx === 'case' ? 'f-bench' : 'edit-bench';
+  const urlEl = document.getElementById(`${prefix}-ubm-url`);
+  const statusEl = document.getElementById(`ubm-fetch-status-${ctx}`);
+  const url = urlEl?.value?.trim();
+
+  if (!url || !url.includes('userbenchmark.com')) {
+    statusEl.style.display = 'block';
+    statusEl.style.color = 'var(--red)';
+    statusEl.textContent = '⚠ UserBenchmarkのURLを入力してください';
+    return;
+  }
+
+  statusEl.style.display = 'block';
+  statusEl.style.color = 'var(--text2)';
+  statusEl.textContent = '⏳ 取得中...';
+
+  try {
+    const res = await fetch('/api/ubm-fetch', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url }),
+    });
+
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+
+    const setVal = (id, val) => {
+      const el = document.getElementById(`${prefix}-ubm-${id}`);
+      if (el && val != null) el.value = val;
+    };
+    setVal('total', data.total);
+    setVal('cpu',   data.cpu);
+    setVal('gpu',   data.gpu);
+    setVal('ram',   data.ram);
+    setVal('ssd',   data.ssd);
+
+    statusEl.style.color = 'var(--green)';
+    statusEl.innerHTML = `✅ 取得完了<br><span style="color:var(--text2);line-height:1.7">${data.comment || ''}</span>`;
+
+    const nameParts = [data.cpu_name, data.gpu_name, data.ram_name, data.ssd_name].filter(Boolean);
+    if (nameParts.length && ctx === 'case') {
+      const memoEl = document.getElementById('f-memo');
+      if (memoEl && !memoEl.value) memoEl.value = nameParts.join(' / ');
+    }
+
+  } catch (e) {
+    statusEl.style.color = 'var(--red)';
+    statusEl.textContent = `❌ 取得失敗: ${e.message}`;
+  }
 }
 
 // ============================================================
@@ -1515,7 +1578,7 @@ Object.assign(window,{
   quickPartSt,detachPart,openPartSt,setPartSt,openAttachToPc,attachPartToPc,
   togglePartSel,openPartsMgr,openCaseSt,setCaseSt,setWonSt,
   openSell,updateSellProfit,onPlatformChange,onShipSelChange,
-  openDel,closeMo,swPanel,openBudgetMo,
+  openDel,closeMo,swPanel,openBudgetMo,fetchUBM,
 });
 
 // 初期化
