@@ -209,6 +209,8 @@ button,select,input,textarea{font-family:inherit;font-size:14px;-webkit-appearan
   <div class="tab on"  data-panel="dash">ダッシュボード</div>
   <div class="tab" data-panel="inventory">在庫管理</div>
   <div class="tab" data-panel="cases">案件管理</div>
+  <div class="tab" data-panel="listing">🛒 出品中</div>
+  <div class="tab" data-panel="sales">💴 売上管理</div>
   <div class="tab" data-panel="add-pc">＋ PC登録</div>
   <div class="tab" data-panel="add-part">＋ パーツ登録</div>
   <div class="tab" data-panel="add-case">＋ 案件登録</div>
@@ -229,7 +231,7 @@ button,select,input,textarea{font-family:inherit;font-size:14px;-webkit-appearan
 
 <!-- 在庫管理 -->
 <div id="p-inventory" class="panel">
-  <div class="sec-title">PC在庫 <span class="sec-btn" onclick="syncAllExistingPartsRemoved()">振り分け一括登録</span></div>
+  <div class="sec-title">PC在庫 <span class="sec-btn" onclick="assignAllManageNos()">管理番号付与</span> <span class="sec-btn" onclick="syncAllExistingPartsRemoved()">振り分け一括登録</span></div>
   <div id="inv-pcs"></div>
   <div class="sec-title" style="margin-top:14px">単品パーツ在庫
     <span id="inv-parts-total" style="font-size:11px;color:var(--amber);letter-spacing:0;text-transform:none;font-weight:500"></span>
@@ -240,6 +242,18 @@ button,select,input,textarea{font-family:inherit;font-size:14px;-webkit-appearan
 <!-- 案件管理 -->
 <div id="p-cases" class="panel">
   <div id="all-cases"></div>
+</div>
+
+<!-- 出品中管理 -->
+<div id="p-listing" class="panel">
+  <div class="metrics" id="listing-metrics"></div>
+  <div id="listing-list"></div>
+</div>
+
+<!-- 売上管理 -->
+<div id="p-sales" class="panel">
+  <div class="metrics" id="sales-metrics"></div>
+  <div id="sales-list"></div>
 </div>
 
 <!-- PC本体登録 -->
@@ -1061,6 +1075,31 @@ function renderAll(){
   document.getElementById('all-cases').innerHTML=cc.length
     ?cc.map(c=>caseHTML(c,true)).join('')
     :'<div class="empty"><div class="empty-icon">📋</div><div class="empty-txt">案件がありません</div><div class="empty-sub">「＋ 案件登録」から追加できます</div></div>';
+
+  // 出品中管理
+  const listingCases=cc.filter(c=>c.status==='list');
+  const listingTotalPrice=listingCases.reduce((s,c)=>s+(c.listPrice||0),0);
+  const listingTotalEp=listingCases.reduce((s,c)=>s+(expectedProfit(c)||0),0);
+  document.getElementById('listing-metrics').innerHTML=`
+    <div class="kpi"><div class="lbl">出品中件数</div><div class="val">${listingCases.length}件</div></div>
+    <div class="kpi a"><div class="lbl">出品合計額</div><div class="val">${yen(listingTotalPrice)}</div><div class="sub">見込み利益 ${yen(listingTotalEp)}</div></div>
+  `;
+  document.getElementById('listing-list').innerHTML=listingCases.length
+    ?listingCases.map(c=>listingHTML(c)).join('')
+    :'<div class="empty"><div class="empty-icon">🛒</div><div class="empty-txt">出品中の案件なし</div></div>';
+
+  // 売上管理
+  const salesCases=cc.filter(c=>['won','shipped','done'].includes(c.status));
+  const salesTotalSell=salesCases.reduce((s,c)=>s+(c.sell||0),0);
+  const salesTotalProfit=salesCases.reduce((s,c)=>{const p=profit(c);return s+(p||0);},0);
+  const doneCases=salesCases.filter(c=>c.status==='done');
+  document.getElementById('sales-metrics').innerHTML=`
+    <div class="kpi g"><div class="lbl">総売上</div><div class="val">${yen(salesTotalSell)}</div><div class="sub">完了${doneCases.length}件 / 全${salesCases.length}件</div></div>
+    <div class="kpi g"><div class="lbl">総利益</div><div class="val">${yen(salesTotalProfit)}</div><div class="sub">平均 ${salesCases.length?yen(Math.round(salesTotalProfit/salesCases.length)):'-'}/件</div></div>
+  `;
+  document.getElementById('sales-list').innerHTML=salesCases.length
+    ?salesCases.map(c=>salesHTML(c)).join('')
+    :'<div class="empty"><div class="empty-icon">💴</div><div class="empty-txt">売上データなし</div></div>';
 }
 
 // PC本体カード（小）
@@ -1104,7 +1143,7 @@ function pcCardFull(pc){
 </div>`:'';
   return`<div class="pc-card">
     <div class="pc-card-head">
-      <div class="pc-title">🖥 ${pc.title}</div>
+      <div class="pc-title">🖥 ${pc.title}${pc.manageNo?` <span style="font-size:10px;font-weight:700;background:var(--bg4);border:1px solid var(--border);border-radius:4px;padding:2px 6px;color:var(--accent);vertical-align:middle;margin-left:4px">${pc.manageNo}</span>`:''}</div>
       <span class="badge ${st.cls}">${st.label}</span>
     </div>
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap">
@@ -1145,7 +1184,7 @@ function partHTML(p,full){
     <div class="part-top">
       <div style="font-size:18px;flex-shrink:0;margin-top:1px">${icon}</div>
       <div class="part-info">
-        <div class="part-name">${p.name}</div>
+        <div class="part-name">${p.name}${p.manageNo?` <span style="font-size:10px;font-weight:700;background:var(--bg4);border:1px solid var(--border);border-radius:4px;padding:2px 6px;color:var(--accent);vertical-align:middle">${p.manageNo}</span>`:''}</div>
         <div class="part-sub">
           <span class="badge ${st.cls}">${st.label}</span>
           ${p.cat?`<span style="font-size:10px;color:var(--text2)">${p.cat}</span>`:''}
@@ -1211,6 +1250,58 @@ function caseHTML(c,full){
   </div>`;
 }
 
+// 出品中カード
+function listingHTML(c){
+  const tc=totalCost(c);const ep=expectedProfit(c);
+  const PLABEL={mercari:'メルカリ',yahoo:'ヤフオク',paypay:'PayPay',rakuma:'ラクマ',jmsy:'ジモティー',other:'その他'};
+  return`<div class="ccase">
+    <div class="ccase-head">
+      <div>
+        ${c.manageNo?`<span style="font-size:10px;font-weight:700;background:var(--bg4);border:1px solid var(--border);border-radius:4px;padding:2px 6px;color:var(--accent);margin-right:6px">${c.manageNo}</span>`:''}
+        <span class="ccase-title" style="display:inline">${c.title}</span>
+      </div>
+      <span class="badge b-list">🛒 出品中</span>
+    </div>
+    <div class="chips">
+      ${c.listPrice?`<span class="chip ch-sell">出品額 ${yen(c.listPrice)}</span>`:''}
+      ${tc?`<span class="chip ch-cost">原価 ${yen(tc)}</span>`:''}
+      ${ep!==null?`<span class="chip" style="background:#00c87a18;color:#44ddaa;border-color:#00c87a40">見込み利益 ${yen(ep)}</span>`:''}
+      ${c.platform?`<span class="chip ch-spec">${PLABEL[c.platform]||c.platform}</span>`:''}
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">
+      <div class="btn sm accent" onclick="openSell('${c.id}')">💰 売値を入力</div>
+      <div class="btn sm" onclick="openCaseSt('${c.id}')">ステータス変更</div>
+    </div>
+  </div>`;
+}
+
+// 売上カード
+function salesHTML(c){
+  const tc=totalCost(c);const pr=profit(c);
+  const ST={won:'🏷 落札済み',shipped:'📮 出荷済み',done:'✅ 完了'};
+  const PLABEL={mercari:'メルカリ',yahoo:'ヤフオク',paypay:'PayPay',rakuma:'ラクマ',jmsy:'ジモティー',other:'その他'};
+  return`<div class="ccase">
+    <div class="ccase-head">
+      <div>
+        ${c.manageNo?`<span style="font-size:10px;font-weight:700;background:var(--bg4);border:1px solid var(--border);border-radius:4px;padding:2px 6px;color:var(--accent);margin-right:6px">${c.manageNo}</span>`:''}
+        <span class="ccase-title" style="display:inline">${c.title}</span>
+      </div>
+      <span class="badge ${c.status==='done'?'b-done':c.status==='shipped'?'b-shipped':'b-won'}">${ST[c.status]||c.status}</span>
+    </div>
+    <div class="chips">
+      ${c.sell?`<span class="chip ch-sell">売値 ${yen(c.sell)}</span>`:''}
+      ${tc?`<span class="chip ch-cost">原価 ${yen(tc)}</span>`:''}
+      ${pr!==null?`<span class="chip" style="${pr>=0?'background:#00c87a18;color:#44ddaa;border-color:#00c87a40':'background:#ff446618;color:#ff9999;border-color:#ff446640'}">純利 ${yen(pr)}</span>`:''}
+      ${c.platform?`<span class="chip ch-spec">${PLABEL[c.platform]||c.platform}</span>`:''}
+      ${c.doneDate?`<span class="chip" style="background:var(--bg4);color:var(--text2);border-color:var(--border)">${c.doneDate}</span>`:''}
+    </div>
+    ${c.status!=='done'?`<div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
+      ${c.status==='won'?`<div class="btn sm accent" onclick="setWonSt('${c.id}','shipped')">📮 出荷する</div>`:''}
+      ${c.status==='shipped'?`<div class="btn sm accent" onclick="setWonSt('${c.id}','done')">✅ 取引完了</div>`:''}
+    </div>`:''}
+  </div>`;
+}
+
 // ============================================================
 // PC本体 操作
 // ============================================================
@@ -1221,7 +1312,7 @@ document.getElementById('btn-add-pc').addEventListener('click',async()=>{
   if(!title){alert('名称を入力してください');return;}
   const id=uid();
   await fbSet(`pcs/${id}`,{
-    id,title,
+    id,title,manageNo:nextPcNo(),
     cost:+document.getElementById('pc-cost').value||0,
     ship:+document.getElementById('pc-ship').value||0,
     status:document.getElementById('pc-status').value,
@@ -1264,6 +1355,27 @@ function switchEditTab(tab){
     document.querySelectorAll('.edit-tab-btn').forEach((btn,i)=>btn.classList.toggle('on',(i===0&&tab==='basic')||(i===1&&tab==='parts')));
   });
 }
+// 管理番号
+function nextPcNo(){
+  const nums=pcs().map(p=>parseInt((p.manageNo||'').replace('PC',''))||0);
+  return'PC'+(Math.max(0,...nums)+1);
+}
+function nextPaNo(){
+  const nums=parts().map(p=>parseInt((p.manageNo||'').replace('PA',''))||0);
+  return'PA'+(Math.max(0,...nums)+1);
+}
+async function assignAllManageNos(){
+  const pcList=pcs().filter(p=>!p.manageNo).sort((a,b)=>(a.date||'')>(b.date||'')?1:-1);
+  const paList=parts().filter(p=>!p.manageNo).sort((a,b)=>(a.date||'')>(b.date||'')?1:-1);
+  if(!pcList.length&&!paList.length){alert('全件に管理番号が付与済みです');return;}
+  if(!confirm(`PC${pcList.length}件、パーツ${paList.length}件に管理番号を付与します。`))return;
+  let pcMax=Math.max(0,...pcs().filter(p=>p.manageNo).map(p=>parseInt(p.manageNo.replace('PC',''))||0));
+  let paMax=Math.max(0,...parts().filter(p=>p.manageNo).map(p=>parseInt(p.manageNo.replace('PA',''))||0));
+  for(const pc of pcList){pcMax++;await fbUpd(`pcs/${pc.id}`,{manageNo:'PC'+pcMax});}
+  for(const pa of paList){paMax++;await fbUpd(`parts/${pa.id}`,{manageNo:'PA'+paMax});}
+  alert('管理番号の付与が完了しました');
+}
+
 async function syncAllExistingPartsRemoved(){
   const pcList=pcs().filter(pc=>(pc.parts_removed||[]).some(p=>!p.partId));
   if(!pcList.length){alert('未登録の振り分けパーツはありません');return;}
@@ -1304,7 +1416,7 @@ async function _syncPartsRemoved(items,pcId,pcTitle){
     if(p.partId)return p; // 既登録はスキップ
     const partId=uid();
     await fbSet(`parts/${partId}`,{
-      id:partId,name:p.name,cat:_guessCat(p.name),
+      id:partId,name:p.name,manageNo:nextPaNo(),cat:_guessCat(p.name),
       cost:p.price||0,ship:0,status:'detached',cond:'取り外し品',
       note:`${pcTitle}より振り分け`,fromPc:pcId,caseId:null,date:today(),
     });
@@ -1404,7 +1516,7 @@ async function execDetachPcPart(pcId,idx){
   // 単品パーツとして在庫に追加
   const newId=uid();
   await fbSet(`parts/${newId}`,{
-    id:newId,name:p.name,cat:p.cat||'OTHER',
+    id:newId,name:p.name,manageNo:nextPaNo(),cat:p.cat||'OTHER',
     cost:p.price||0,ship:0,
     status:'detached',cond:'取り外し品',
     note:`${pc.title}より取り外し`,
@@ -1423,7 +1535,7 @@ async function detachPcPart(pcId,idx){
   if(!confirm(`「${p.name}」を取り外して単品在庫に移しますか？`))return;
   const newId=uid();
   await fbSet(`parts/${newId}`,{
-    id:newId,name:p.name,cat:p.cat||'OTHER',
+    id:newId,name:p.name,manageNo:nextPaNo(),cat:p.cat||'OTHER',
     cost:p.price||0,ship:0,status:'detached',cond:'取り外し品',
     note:`${pc.title}より取り外し`,fromPc:pcId,caseId:null,date:today(),
   });
@@ -1439,7 +1551,7 @@ document.getElementById('btn-add-part').addEventListener('click',async()=>{
   if(!name){alert('パーツ名を入力してください');return;}
   const id=uid();
   await fbSet(`parts/${id}`,{
-    id,name,cat:document.getElementById('p-cat').value,
+    id,name,manageNo:nextPaNo(),cat:document.getElementById('p-cat').value,
     cost:+document.getElementById('p-cost').value||0,
     ship:+document.getElementById('p-ship').value||0,
     status:document.getElementById('p-st').value,
@@ -1719,6 +1831,7 @@ Object.assign(window,{
   openDel,closeMo,swPanel,openBudgetMo,fetchUBM,applyUBMData,
   sendChat,stopChat,switchAiTab,
   switchEditTab,addPartsRow,getPartsRemoved,addPartsRowAdd,getPartsRemovedAdd,syncAllExistingPartsRemoved,
+  assignAllManageNos,listingHTML,salesHTML,
 });
 
 // ============================================================
