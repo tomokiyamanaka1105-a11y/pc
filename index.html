@@ -284,15 +284,6 @@ button,select,input,textarea{font-family:inherit;font-size:14px;-webkit-appearan
     <div class="field"><label>その他搭載パーツ・メモ</label><textarea id="pc-memo" placeholder="光学ドライブあり・Wi-Fiカードなし など"></textarea></div>
   </div>
 
-  <div class="form-card" id="pc-parts-pricing-card">
-    <h3>💰 搭載パーツへの価格振り分け（任意）</h3>
-    <div style="font-size:12px;color:var(--text2);margin-bottom:12px;line-height:1.6">仕入れ価格を各パーツに按分することで、パーツを取り外した際の在庫評価額が正確になります。空欄は0円として扱われます。</div>
-    <div class="parts-price-table" id="ppt-table">
-      <div class="ppt-head"><div>パーツ</div><div style="text-align:right">価格（円）</div></div>
-    </div>
-    <div style="font-size:12px;color:var(--text2)">※ 振り分け合計が仕入れ価格を超える場合は警告が出ます</div>
-  </div>
-
   <div class="form-card">
     <h3>💸 振り分け（取り外して売るパーツ）</h3>
     <div style="font-size:12px;color:var(--text2);margin-bottom:12px;line-height:1.6">取り外して個別売却予定のパーツ名と回収額を入力。実質原価から差し引かれます。</div>
@@ -1118,7 +1109,7 @@ function pcCardFull(pc){
     </div>
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap">
       <span style="font-size:14px;font-weight:700;color:var(--amber)">${yen(base)}<span style="font-size:10px;color:var(--text2);font-weight:400"> 仕入</span></span>
-      ${pl.length?`<span style="font-size:12px;color:var(--text2)">+ パーツ ${yen(pl.reduce((s,p)=>s+(p.price||0),0))}</span><span style="font-size:13px;font-weight:700;color:var(--accent)">= ${yen(pcCost(pc))}</span>`:""}
+      ${removedTotal>0?`<span style="font-size:12px;color:var(--red)">－ 振り分け ${yen(removedTotal)}</span><span style="font-size:13px;font-weight:700;color:var(--accent)">= ${yen(realCost)}</span>`:pl.length?`<span style="font-size:12px;color:var(--text2)">+ パーツ ${yen(pl.reduce((s,p)=>s+(p.price||0),0))}</span><span style="font-size:13px;font-weight:700;color:var(--accent)">= ${yen(pcCost(pc))}</span>`:""}
       <span style="font-size:11px;color:var(--text2)">${pc.cond||''}</span>
     </div>
     ${specItems.length?`<div class="spec-grid">${specItems.map(([l,v,kws])=>{const rm=isRemoved(kws||[]);return`<div class="spec-item${rm?' spec-removed':''}"><div class="spec-lbl">${l}</div><div class="spec-val">${v}${rm?removedBadge:''}</div></div>`;}).join('')}</div>`:''}
