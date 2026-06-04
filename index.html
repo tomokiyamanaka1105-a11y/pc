@@ -301,6 +301,34 @@ button,select,input,textarea{font-family:inherit;font-size:14px;-webkit-appearan
   </div>
 </div>
 
+<!-- 出品編集モーダル -->
+<div class="mo" id="mo-edit-listing" onclick="if(event.target===this)closeMo('mo-edit-listing')">
+  <div class="mo-box" onclick="event.stopPropagation()">
+    <div class="mo-title" id="mo-edit-listing-title">出品を編集</div>
+    <div class="mo-body">
+      <div id="el-item-info" style="background:var(--bg3);border-radius:8px;padding:10px 12px;margin-bottom:12px;font-size:12px;color:var(--text2)"></div>
+      <div class="mo-field"><label>出品プラットフォーム</label>
+        <select id="el-platform" onchange="onElCalc()">
+          <option value="yahoo_auction">ヤフオク（8.8%）</option>
+          <option value="yahoo_flea">ヤフーフリマ（5%）</option>
+          <option value="mercari">メルカリ（10%）</option>
+          <option value="ebay">eBay（13%）</option>
+        </select>
+      </div>
+      <div class="mo-field"><label>出品価格（円）</label>
+        <input id="el-price" type="number" inputmode="numeric" placeholder="15000" min="0" oninput="onElCalc()">
+      </div>
+      <div id="el-profit-preview" style="background:var(--bg3);border-radius:8px;padding:10px 12px;margin-bottom:12px">
+        <div style="font-size:11px;color:var(--text2);margin-bottom:6px">見込み利益</div>
+        <div id="el-profit-val" style="font-size:20px;font-weight:700;color:var(--green)">—</div>
+        <div id="el-profit-detail" style="font-size:11px;color:var(--text2);margin-top:4px;line-height:1.8"></div>
+      </div>
+      <div class="btn primary full" id="btn-save-edit-listing">保存する</div>
+    </div>
+    <div class="mo-cancel" onclick="closeMo('mo-edit-listing')">キャンセル</div>
+  </div>
+</div>
+
 <!-- 販売済にするモーダル -->
 <div class="mo" id="mo-sell-listing" onclick="if(event.target===this)closeMo('mo-sell-listing')">
   <div class="mo-box" onclick="event.stopPropagation()">
@@ -1398,6 +1426,7 @@ function listingCardHTML(l){
     </div>
     <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">
       <div class="btn sm accent" onclick="openSellListing('${l.id}')">💰 販売済にする</div>
+      <div class="btn sm" onclick="openEditListing('${l.id}')">✏️ 編集</div>
       <div class="btn sm" onclick="openListingSt('${l.id}')">ステータス変更</div>
       <div class="btn sm danger" onclick="delListing('${l.id}')">削除</div>
     </div>
@@ -1537,6 +1566,40 @@ document.getElementById('btn-save-new-listing').addEventListener('click',async()
   else await fbUpd(`parts/${id}`,{status:'listed'});
   closeMo('mo-new-listing');
   swPanel('listing');
+});
+
+let _editListingId=null;
+function openEditListing(lid){
+  _editListingId=lid;
+  const l=STATE.listings[lid];if(!l)return;
+  document.getElementById('mo-edit-listing-title').textContent=`編集：${l.title}`;
+  document.getElementById('el-item-info').textContent=`${l.manageNo?'['+l.manageNo+'] ':''}${l.title}　原価 ${yen(l.cost)}`;
+  document.getElementById('el-platform').value=l.platform||'yahoo_auction';
+  document.getElementById('el-price').value=l.listPrice||'';
+  onElCalc();
+  openMo('mo-edit-listing');
+}
+function onElCalc(){
+  const l=_editListingId?STATE.listings[_editListingId]:null;
+  const cost=l?l.cost||0:0;
+  const price=+document.getElementById('el-price').value||0;
+  const platformKey=document.getElementById('el-platform').value;
+  const pl=PLATFORM[platformKey]||{rate:0};
+  const fee=Math.round(price*pl.rate);
+  const np=price-cost-fee;
+  document.getElementById('el-profit-val').textContent=price?yen(np):'—';
+  document.getElementById('el-profit-val').style.color=np>=0?'var(--green)':'var(--red)';
+  document.getElementById('el-profit-detail').textContent=price?`出品額 ${yen(price)} — 原価 ${yen(cost)} — 手数料 ${yen(fee)}(${(pl.rate*100).toFixed(1)}%)`:'';
+}
+document.getElementById('btn-save-edit-listing').addEventListener('click',async()=>{
+  if(!_editListingId)return;
+  const price=+document.getElementById('el-price').value||0;
+  if(!price){alert('出品価格を入力してください');return;}
+  await fbUpd(`listings/${_editListingId}`,{
+    platform:document.getElementById('el-platform').value,
+    listPrice:price,
+  });
+  closeMo('mo-edit-listing');
 });
 
 function openSellListing(lid){
@@ -2159,7 +2222,7 @@ Object.assign(window,{
   assignAllManageNos,listingHTML,salesHTML,listingCardHTML,salesCardHTML,
   openNewListing,onNlInventoryChange,onNlPlatformChange,onNlPriceChange,
   openSellListing,onSlCalc,openListingSt,setListingSt,delListing,setSalesFilter,
-  cancelListing,relistListing,
+  cancelListing,relistListing,openEditListing,onElCalc,
 });
 
 // ============================================================
