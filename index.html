@@ -1461,13 +1461,15 @@ function setSalesFilter(f){
 function openNewListing(){
   const sel=document.getElementById('nl-inventory-sel');
   sel.innerHTML='<option value="">— 選択してください —</option>';
-  pcs().filter(p=>!['sold','listed'].includes(p.status)).forEach(p=>{
+  // キャンセル済みlistingに紐づく在庫IDを取得（壊れたデータ救済用）
+  const cancelledInventoryIds=new Set(listings().filter(l=>l.status==='cancelled').map(l=>l.inventoryId));
+  pcs().filter(p=>!['sold'].includes(p.status)&&(p.status!=='listed'||cancelledInventoryIds.has(p.id))).forEach(p=>{
     const o=document.createElement('option');
     o.value='pc:'+p.id;
     o.textContent=`[${p.manageNo||'PC?'}] ${p.title} — 原価${yen(pcBaseCost(p))}`;
     sel.appendChild(o);
   });
-  parts().filter(p=>!['sold','listed','used'].includes(p.status)).forEach(p=>{
+  parts().filter(p=>!['sold','used'].includes(p.status)&&(p.status!=='listed'||cancelledInventoryIds.has(p.id))).forEach(p=>{
     const o=document.createElement('option');
     o.value='part:'+p.id;
     o.textContent=`[${p.manageNo||'PA?'}] ${p.name} — 原価${yen(partCost(p))}`;
@@ -1613,6 +1615,9 @@ async function cancelListing(lid){
 async function relistListing(lid){
   const l=STATE.listings[lid];if(!l)return;
   await fbUpd(`listings/${lid}`,{status:'listed'});
+  // 在庫も出品中に戻す
+  if(l.inventoryType==='pc')await fbUpd(`pcs/${l.inventoryId}`,{status:'listed'});
+  else await fbUpd(`parts/${l.inventoryId}`,{status:'listed'});
 }
 async function delListing(lid){
   const l=STATE.listings[lid];if(!l)return;
