@@ -1606,9 +1606,9 @@ async function cancelListing(lid){
   const l=STATE.listings[lid];if(!l)return;
   if(!confirm(`「${l.title}」をキャンセルにしますか？\n出品中タブに戻ります。`))return;
   await fbUpd(`listings/${lid}`,{status:'cancelled',soldDate:null,salePrice:null,fee:null,shipFee:null});
-  // 在庫ステータスを「出品中」に戻す
-  if(l.inventoryType==='pc')await fbUpd(`pcs/${l.inventoryId}`,{status:'listed'});
-  else await fbUpd(`parts/${l.inventoryId}`,{status:'listed'});
+  // 在庫ステータスを元に戻す
+  if(l.inventoryType==='pc')await fbUpd(`pcs/${l.inventoryId}`,{status:'stock'});
+  else await fbUpd(`parts/${l.inventoryId}`,{status:'detached'});
 }
 async function relistListing(lid){
   const l=STATE.listings[lid];if(!l)return;
