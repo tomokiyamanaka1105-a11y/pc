@@ -182,6 +182,12 @@ button,select,input,textarea{font-family:inherit;font-size:14px;-webkit-appearan
 .bench-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px}
 .bench-item{color:var(--green);font-variant-numeric:tabular-nums}
 .bench-wrap{margin-bottom:8px}
+.spec-removed{opacity:0.4;text-decoration:line-through}
+.parts-row{display:flex;gap:6px;align-items:center;margin-bottom:6px}
+.edit-tab-bar{display:flex;gap:0;margin-bottom:14px;border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.edit-tab-btn{flex:1;padding:9px 6px;font-size:11px;font-weight:600;text-align:center;cursor:pointer;color:var(--text2);background:var(--bg3)}
+.edit-tab-btn.on{background:var(--accent);color:#000}
+.edit-tab-pane{display:none}.edit-tab-pane.on{display:block}
 </style>
 </head>
 <body>
@@ -613,6 +619,11 @@ button,select,input,textarea{font-family:inherit;font-size:14px;-webkit-appearan
   <div class="mo-box" onclick="event.stopPropagation()">
     <div class="mo-title">PC在庫を編集</div>
     <div class="mo-body">
+      <div class="edit-tab-bar">
+        <div class="edit-tab-btn on" onclick="switchEditTab('basic')">基本情報</div>
+        <div class="edit-tab-btn" onclick="switchEditTab('parts')">振り分け管理</div>
+      </div>
+      <div class="edit-tab-pane on" id="edit-tab-basic">
       <div class="mo-field"><label>名称・型番</label><input id="edit-pc-title" type="text"></div>
       <div class="mo-form-row">
         <div class="mo-field"><label>仕入れ価格（円）</label><input id="edit-pc-cost" type="number" inputmode="numeric" min="0"></div>
@@ -695,6 +706,13 @@ button,select,input,textarea{font-family:inherit;font-size:14px;-webkit-appearan
         <div class="btn sm accent" onclick="fetchUBM('edit')">🔍 URLからスコアを自動取得</div>
       </div>
       <div id="ubm-fetch-status-edit" style="font-size:11px;color:var(--text2);margin-top:6px;display:none"></div>
+      </div><!-- /edit-tab-basic -->
+      <div class="edit-tab-pane" id="edit-tab-parts">
+        <div style="font-size:11px;font-weight:600;color:var(--accent);margin-bottom:10px">💸 振り分け（取り外して売るパーツ）</div>
+        <div style="font-size:11px;color:var(--text2);margin-bottom:12px;line-height:1.6">パーツ名と回収予定額を入力。実質原価から差し引かれます。</div>
+        <div id="parts-removed-list"></div>
+        <div class="btn sm accent" style="margin-bottom:14px" onclick="addPartsRow()">＋ 振り分け行を追加</div>
+      </div><!-- /edit-tab-parts -->
       <div class="btn primary full" id="btn-save-pc-edit" style="margin-top:4px">保存する</div>
     </div>
     <div class="mo-cancel" onclick="closeMo('mo-pc-edit')">キャンセル</div>
@@ -1064,21 +1082,41 @@ function pcCardSmall(pc){
 function pcCardFull(pc){
   const st=PC_ST[pc.status]||PC_ST.stock;
   const pl=pcPartsList(pc);
-  const specItems=[
-    ['CPU',pc.cpu],['GPU',pc.gpu],['RAM',pc.ram],['SSD',pc.ssd],['電源',pc.psu],['MB',pc.mb]
-  ].filter(([,v])=>v);
+  const base=pcBaseCost(pc);
+  const addedTotal=(pc.parts_added||[]).reduce((s,p)=>s+p.price,0);
+  const removedTotal=(pc.parts_removed||[]).reduce((s,p)=>s+p.price,0);
+  const realCost=base+addedTotal-removedTotal;
+  const removedNames=(pc.parts_removed||[]).map(p=>p.name.toLowerCase());
+  const isRemoved=(kws)=>removedNames.some(n=>kws.some(k=>n.includes(k)));
+  const specDefs=[
+    ['CPU',pc.cpu,['cpu']],['GPU',pc.gpu,['gpu']],['RAM',pc.ram,['ram','メモリ']],
+    ['SSD',pc.ssd,['ssd','hdd']],['電源',pc.psu,['電源','psu']],['MB',pc.mb,['mb','マザー']]
+  ];
+  const specItems=specDefs.filter(([,v])=>v);
+  const removedBadge='<span style="font-size:10px;background:#ff446622;color:var(--red);padding:1px 6px;border-radius:4px;margin-left:4px">取り外し済み</span>';
+  const costSummaryHtml=(removedTotal>0||(pc.parts_added||[]).length)?`
+<div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:10px">
+  <div style="font-size:10px;font-weight:700;color:var(--accent);margin-bottom:8px;text-transform:uppercase">💰 原価計算</div>
+  <div style="font-size:12px;line-height:2;color:var(--text2)">
+    <div>本体仕入れ <span style="float:right;color:var(--text)">¥${base.toLocaleString()}</span></div>
+    ${(pc.parts_added||[]).map(p=>`<div style="color:var(--green)">＋ ${p.name} <span style="float:right">¥${p.price.toLocaleString()}</span></div>`).join('')}
+    ${(pc.parts_removed||[]).map(p=>`<div style="color:var(--red)">－ ${p.name}（振り分け） <span style="float:right">¥${p.price.toLocaleString()}</span></div>`).join('')}
+    <div style="border-top:1px solid var(--border);margin-top:6px;padding-top:6px;font-weight:700;color:var(--text)">実質原価 <span style="float:right;font-size:15px;color:var(--accent)">¥${realCost.toLocaleString()}</span></div>
+  </div>
+</div>`:'';
   return`<div class="pc-card">
     <div class="pc-card-head">
       <div class="pc-title">🖥 ${pc.title}</div>
       <span class="badge ${st.cls}">${st.label}</span>
     </div>
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap">
-      <span style="font-size:14px;font-weight:700;color:var(--amber)">${yen(pcBaseCost(pc))}<span style="font-size:10px;color:var(--text2);font-weight:400"> 仕入</span></span>
-      ${pcPartsList(pc).length?`<span style="font-size:12px;color:var(--text2)">+ パーツ ${yen(pcPartsList(pc).reduce((s,p)=>s+(p.price||0),0))}</span><span style="font-size:13px;font-weight:700;color:var(--accent)">= ${yen(pcCost(pc))}</span>`:""}
+      <span style="font-size:14px;font-weight:700;color:var(--amber)">${yen(base)}<span style="font-size:10px;color:var(--text2);font-weight:400"> 仕入</span></span>
+      ${pl.length?`<span style="font-size:12px;color:var(--text2)">+ パーツ ${yen(pl.reduce((s,p)=>s+(p.price||0),0))}</span><span style="font-size:13px;font-weight:700;color:var(--accent)">= ${yen(pcCost(pc))}</span>`:""}
       <span style="font-size:11px;color:var(--text2)">${pc.cond||''}</span>
     </div>
-    ${specItems.length?`<div class="spec-grid">${specItems.map(([l,v])=>`<div class="spec-item"><div class="spec-lbl">${l}</div><div class="spec-val">${v}</div></div>`).join('')}</div>`:''}
+    ${specItems.length?`<div class="spec-grid">${specItems.map(([l,v,kws])=>{const rm=isRemoved(kws||[]);return`<div class="spec-item${rm?' spec-removed':''}"><div class="spec-lbl">${l}</div><div class="spec-val">${v}${rm?removedBadge:''}</div></div>`;}).join('')}</div>`:''}
     ${pc.memo?`<div style="font-size:11px;color:var(--text2);margin-bottom:8px">${pc.memo}</div>`:''}
+    ${costSummaryHtml}
     ${renderBenchBlock(pc)}
     ${pl.length?`
       <div class="pc-parts-list">
@@ -1267,6 +1305,27 @@ function openPcSt(id){
 }
 async function setPcSt(st){await fbUpd(`pcs/${_pcStId}`,{status:st});closeMo('mo-pc-st');}
 
+// 振り分けUI
+function switchEditTab(tab){
+  ['basic','parts'].forEach(t=>{
+    document.getElementById('edit-tab-'+t).classList.toggle('on',t===tab);
+    document.querySelectorAll('.edit-tab-btn').forEach((btn,i)=>btn.classList.toggle('on',(i===0&&tab==='basic')||(i===1&&tab==='parts')));
+  });
+}
+function addPartsRow(name='',price=''){
+  const list=document.getElementById('parts-removed-list');
+  const row=document.createElement('div');
+  row.className='parts-row';
+  row.innerHTML=`<input type="text" class="pr-name" style="flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;padding:9px 11px;outline:none" placeholder="パーツ名（例: RAM DDR4 8GB）" value="${name}"><input type="number" class="pr-price" style="width:100px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;padding:9px 11px;outline:none" placeholder="回収額" value="${price}"><div class="btn sm" style="background:var(--bg3);border:1px solid #ff446644;color:var(--red);flex:none;width:auto" onclick="this.parentElement.remove()">✕</div>`;
+  list.appendChild(row);
+}
+function getPartsRemoved(){
+  return [...document.querySelectorAll('#parts-removed-list .parts-row')].map(row=>({
+    name:row.querySelector('.pr-name').value.trim(),
+    price:+row.querySelector('.pr-price').value||0,
+  })).filter(p=>p.name);
+}
+
 // PC編集
 let _editPcId=null;
 function openPcEdit(id){
@@ -1293,6 +1352,12 @@ function openPcEdit(id){
   document.getElementById('edit-bench-ubm-ram').value=ubm.ram||'';
   document.getElementById('edit-bench-ubm-ssd').value=ubm.ssd||'';
   document.getElementById('edit-bench-ubm-url').value=ubm.url||'';
+  // 振り分けリスト読み込み
+  document.getElementById('parts-removed-list').innerHTML='';
+  (pc.parts_removed||[]).forEach(p=>addPartsRow(p.name,p.price));
+  if(!(pc.parts_removed&&pc.parts_removed.length))addPartsRow();
+  // タブをリセット
+  switchEditTab('basic');
   openMo('mo-pc-edit');
 }
 document.getElementById('btn-save-pc-edit').addEventListener('click',async()=>{
@@ -1315,6 +1380,7 @@ document.getElementById('btn-save-pc-edit').addEventListener('click',async()=>{
     benchFF14:{score:+document.getElementById('edit-bench-ff14-score').value||null,quality:document.getElementById('edit-bench-ff14-quality').value||null,res:document.getElementById('edit-bench-ff14-res').value||null},
     benchMM:{score:+document.getElementById('edit-bench-mm-score').value||null,ver:document.getElementById('edit-bench-mm-ver').value||null},
     benchUBM:{total:+document.getElementById('edit-bench-ubm-total').value||null,cpu:+document.getElementById('edit-bench-ubm-cpu').value||null,gpu:+document.getElementById('edit-bench-ubm-gpu').value||null,ram:+document.getElementById('edit-bench-ubm-ram').value||null,ssd:+document.getElementById('edit-bench-ubm-ssd').value||null,url:document.getElementById('edit-bench-ubm-url').value||null},
+    parts_removed:getPartsRemoved(),
   });
   closeMo('mo-pc-edit');
 });
