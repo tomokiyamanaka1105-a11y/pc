@@ -293,6 +293,13 @@ button,select,input,textarea{font-family:inherit;font-size:14px;-webkit-appearan
     <div style="font-size:12px;color:var(--text2)">※ 振り分け合計が仕入れ価格を超える場合は警告が出ます</div>
   </div>
 
+  <div class="form-card">
+    <h3>💸 振り分け（取り外して売るパーツ）</h3>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:12px;line-height:1.6">取り外して個別売却予定のパーツ名と回収額を入力。実質原価から差し引かれます。</div>
+    <div id="add-parts-removed-list"></div>
+    <div class="btn sm accent" style="margin-bottom:4px" onclick="addPartsRowAdd()">＋ 振り分け行を追加</div>
+  </div>
+
   <div class="btn primary" id="btn-add-pc">PC本体を登録する</div>
 </div>
 
@@ -1281,12 +1288,13 @@ document.getElementById('btn-add-pc').addEventListener('click',async()=>{
     psu:document.getElementById('pc-psu').value,
     mb:document.getElementById('pc-mb').value,
     memo:document.getElementById('pc-memo').value,
-    pcParts,date:today(),
+    pcParts,parts_removed:getPartsRemovedAdd(),date:today(),
   });
   ['pc-title','pc-cpu','pc-gpu','pc-ram','pc-ssd','pc-psu','pc-mb','pc-memo'].forEach(i=>document.getElementById(i).value='');
   document.getElementById('pc-cost').value='0';
   document.getElementById('pc-ship').value='0';
   document.getElementById('pc-status').value='stock';
+  document.getElementById('add-parts-removed-list').innerHTML='';
   buildPcPartsTable();
   swPanel('inventory');
 });
@@ -1311,6 +1319,19 @@ function switchEditTab(tab){
     document.getElementById('edit-tab-'+t).classList.toggle('on',t===tab);
     document.querySelectorAll('.edit-tab-btn').forEach((btn,i)=>btn.classList.toggle('on',(i===0&&tab==='basic')||(i===1&&tab==='parts')));
   });
+}
+function addPartsRowAdd(name='',price=''){
+  const list=document.getElementById('add-parts-removed-list');
+  const row=document.createElement('div');
+  row.className='parts-row';
+  row.innerHTML=`<input type="text" class="pr-name" style="flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;padding:9px 11px;outline:none" placeholder="パーツ名（例: RAM DDR4 8GB）" value="${name}"><input type="number" class="pr-price" style="width:100px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;padding:9px 11px;outline:none" placeholder="回収額" value="${price}"><div class="btn sm" style="background:var(--bg3);border:1px solid #ff446644;color:var(--red);flex:none;width:auto" onclick="this.parentElement.remove()">✕</div>`;
+  list.appendChild(row);
+}
+function getPartsRemovedAdd(){
+  return [...document.querySelectorAll('#add-parts-removed-list .parts-row')].map(row=>({
+    name:row.querySelector('.pr-name').value.trim(),
+    price:+row.querySelector('.pr-price').value||0,
+  })).filter(p=>p.name);
 }
 function addPartsRow(name='',price=''){
   const list=document.getElementById('parts-removed-list');
@@ -1727,7 +1748,7 @@ Object.assign(window,{
   openSell,updateSellProfit,onPlatformChange,onShipSelChange,
   openDel,closeMo,swPanel,openBudgetMo,fetchUBM,applyUBMData,
   sendChat,stopChat,switchAiTab,
-  switchEditTab,addPartsRow,getPartsRemoved,
+  switchEditTab,addPartsRow,getPartsRemoved,addPartsRowAdd,getPartsRemovedAdd,
 });
 
 // ============================================================
