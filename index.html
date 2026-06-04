@@ -1208,20 +1208,18 @@ function renderAll(){
     :'<div class="empty"><div class="empty-icon">🛒</div><div class="empty-txt">出品中なし</div><div class="empty-sub">「＋ 出品を登録する」から追加</div></div>';
 
   // 売上管理
-  const soldItems=listings().filter(l=>l.status!=='listed');
+  const soldItems=listings().filter(l=>l.status!=='listed'&&l.status!=='cancelled');
   const filteredSales=_salesFilter==='month'
     ?soldItems.filter(l=>{const d=l.soldDate||l.listedDate||'';return d.startsWith(new Date().toLocaleDateString('ja-JP').slice(0,7));})
     :_salesFilter==='year'
     ?soldItems.filter(l=>{const d=l.soldDate||l.listedDate||'';return d.startsWith(new Date().getFullYear()+'');})
     :soldItems;
-  const activeSales=filteredSales.filter(l=>l.status!=='cancelled');
-  const salesTotal=activeSales.reduce((s,l)=>s+(l.salePrice||0),0);
-  const salesGp=activeSales.reduce((s,l)=>{const g=grossProfit(l);return s+(g||0);},0);
-  const salesNp=activeSales.reduce((s,l)=>{const p=listingProfit(l);return s+(p||0);},0);
-  const doneSales=activeSales.filter(l=>l.status==='sold_done');
-  const cancelledCount=filteredSales.filter(l=>l.status==='cancelled').length;
+  const salesTotal=filteredSales.reduce((s,l)=>s+(l.salePrice||0),0);
+  const salesGp=filteredSales.reduce((s,l)=>{const g=grossProfit(l);return s+(g||0);},0);
+  const salesNp=filteredSales.reduce((s,l)=>{const p=listingProfit(l);return s+(p||0);},0);
+  const doneSales=filteredSales.filter(l=>l.status==='sold_done');
   document.getElementById('sales-metrics').innerHTML=`
-    <div class="kpi g"><div class="lbl">総売上</div><div class="val">${yen(salesTotal)}</div><div class="sub">完了${doneSales.length}件/全${activeSales.length}件${cancelledCount?` / キャンセル${cancelledCount}件`:''}</div></div>
+    <div class="kpi g"><div class="lbl">総売上</div><div class="val">${yen(salesTotal)}</div><div class="sub">完了${doneSales.length}件/全${filteredSales.length}件</div></div>
     <div class="kpi g"><div class="lbl">粗利 / 純利</div><div class="val">${yen(salesGp)}</div><div class="sub">純利 ${yen(salesNp)} / 利益率 ${salesTotal?((salesNp/salesTotal)*100).toFixed(1):'—'}%</div></div>
   `;
   document.getElementById('sales-list').innerHTML=filteredSales.length
