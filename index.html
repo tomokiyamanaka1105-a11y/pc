@@ -229,7 +229,7 @@ button,select,input,textarea{font-family:inherit;font-size:14px;-webkit-appearan
 
 <!-- 在庫管理 -->
 <div id="p-inventory" class="panel">
-  <div class="sec-title">PC在庫</div>
+  <div class="sec-title">PC在庫 <span class="sec-btn" onclick="syncAllExistingPartsRemoved()">振り分け一括登録</span></div>
   <div id="inv-pcs"></div>
   <div class="sec-title" style="margin-top:14px">単品パーツ在庫
     <span id="inv-parts-total" style="font-size:11px;color:var(--amber);letter-spacing:0;text-transform:none;font-weight:500"></span>
@@ -1233,7 +1233,7 @@ document.getElementById('btn-add-pc').addEventListener('click',async()=>{
     psu:document.getElementById('pc-psu').value,
     mb:document.getElementById('pc-mb').value,
     memo:document.getElementById('pc-memo').value,
-    parts_removed:getPartsRemovedAdd(),date:today(),
+    parts_removed:await _syncPartsRemoved(getPartsRemovedAdd(),id,title),date:today(),
   });
   ['pc-title','pc-cpu','pc-gpu','pc-ram','pc-ssd','pc-psu','pc-mb','pc-memo'].forEach(i=>document.getElementById(i).value='');
   document.getElementById('pc-cost').value='0';
@@ -1264,32 +1264,58 @@ function switchEditTab(tab){
     document.querySelectorAll('.edit-tab-btn').forEach((btn,i)=>btn.classList.toggle('on',(i===0&&tab==='basic')||(i===1&&tab==='parts')));
   });
 }
-function addPartsRowAdd(name='',price=''){
-  const list=document.getElementById('add-parts-removed-list');
+async function syncAllExistingPartsRemoved(){
+  const pcList=pcs().filter(pc=>(pc.parts_removed||[]).some(p=>!p.partId));
+  if(!pcList.length){alert('未登録の振り分けパーツはありません');return;}
+  if(!confirm(`${pcList.length}台のPCの振り分けパーツをパーツ在庫に登録します。よろしいですか？`))return;
+  for(const pc of pcList){
+    const synced=await _syncPartsRemoved(pc.parts_removed||[],pc.id,pc.title);
+    await fbUpd(`pcs/${pc.id}`,{parts_removed:synced});
+  }
+  alert('完了しました');
+}
+function _guessCat(name){
+  const n=name.toLowerCase();
+  if(/cpu|core i|ryzen|celeron|pentium|xeon/.test(n))return'CPU';
+  if(/gpu|グラボ|gtx|rtx|radeon|geforce/.test(n))return'GPU';
+  if(/ram|メモリ|ddr/.test(n))return'RAM';
+  if(/ssd|hdd|nvme|ストレージ/.test(n))return'SSD';
+  if(/電源|psu|power supply/.test(n))return'PSU';
+  if(/mb|マザー|motherboard/.test(n))return'MB';
+  return'OTHER';
+}
+function _makePartsRow(listId,name='',price='',partId=''){
+  const list=document.getElementById(listId);
   const row=document.createElement('div');
   row.className='parts-row';
-  row.innerHTML=`<input type="text" class="pr-name" style="flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;padding:9px 11px;outline:none" placeholder="パーツ名（例: RAM DDR4 8GB）" value="${name}"><input type="number" class="pr-price" style="width:100px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;padding:9px 11px;outline:none" placeholder="回収額" value="${price}"><div class="btn sm" style="background:var(--bg3);border:1px solid #ff446644;color:var(--red);flex:none;width:auto" onclick="this.parentElement.remove()">✕</div>`;
+  const existBadge=partId?`<span style="font-size:10px;color:var(--green);margin-left:2px">✓登録済</span>`:'';
+  row.innerHTML=`<input type="hidden" class="pr-partid" value="${partId}"><input type="text" class="pr-name" style="flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;padding:9px 11px;outline:none" placeholder="パーツ名（例: RAM DDR4 8GB）" value="${name}">${existBadge}<input type="number" class="pr-price" style="width:100px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;padding:9px 11px;outline:none" placeholder="回収額" value="${price}"><div class="btn sm" style="background:var(--bg3);border:1px solid #ff446644;color:var(--red);flex:none;width:auto" onclick="this.parentElement.remove()">✕</div>`;
   list.appendChild(row);
 }
-function getPartsRemovedAdd(){
-  return [...document.querySelectorAll('#add-parts-removed-list .parts-row')].map(row=>({
+function _collectPartsRemoved(listId){
+  return [...document.querySelectorAll(`#${listId} .parts-row`)].map(row=>({
     name:row.querySelector('.pr-name').value.trim(),
     price:+row.querySelector('.pr-price').value||0,
+    partId:row.querySelector('.pr-partid')?.value||'',
   })).filter(p=>p.name);
 }
-function addPartsRow(name='',price=''){
-  const list=document.getElementById('parts-removed-list');
-  const row=document.createElement('div');
-  row.className='parts-row';
-  row.innerHTML=`<input type="text" class="pr-name" style="flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;padding:9px 11px;outline:none" placeholder="パーツ名（例: RAM DDR4 8GB）" value="${name}"><input type="number" class="pr-price" style="width:100px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;padding:9px 11px;outline:none" placeholder="回収額" value="${price}"><div class="btn sm" style="background:var(--bg3);border:1px solid #ff446644;color:var(--red);flex:none;width:auto" onclick="this.parentElement.remove()">✕</div>`;
-  list.appendChild(row);
+async function _syncPartsRemoved(items,pcId,pcTitle){
+  const results=await Promise.all(items.map(async p=>{
+    if(p.partId)return p; // 既登録はスキップ
+    const partId=uid();
+    await fbSet(`parts/${partId}`,{
+      id:partId,name:p.name,cat:_guessCat(p.name),
+      cost:p.price||0,ship:0,status:'detached',cond:'取り外し品',
+      note:`${pcTitle}より振り分け`,fromPc:pcId,caseId:null,date:today(),
+    });
+    return{...p,partId};
+  }));
+  return results;
 }
-function getPartsRemoved(){
-  return [...document.querySelectorAll('#parts-removed-list .parts-row')].map(row=>({
-    name:row.querySelector('.pr-name').value.trim(),
-    price:+row.querySelector('.pr-price').value||0,
-  })).filter(p=>p.name);
-}
+function addPartsRowAdd(name='',price='',partId=''){_makePartsRow('add-parts-removed-list',name,price,partId);}
+function getPartsRemovedAdd(){return _collectPartsRemoved('add-parts-removed-list');}
+function addPartsRow(name='',price='',partId=''){_makePartsRow('parts-removed-list',name,price,partId);}
+function getPartsRemoved(){return _collectPartsRemoved('parts-removed-list');}
 
 // PC編集
 let _editPcId=null;
@@ -1319,7 +1345,7 @@ function openPcEdit(id){
   document.getElementById('edit-bench-ubm-url').value=ubm.url||'';
   // 振り分けリスト読み込み
   document.getElementById('parts-removed-list').innerHTML='';
-  (pc.parts_removed||[]).forEach(p=>addPartsRow(p.name,p.price));
+  (pc.parts_removed||[]).forEach(p=>addPartsRow(p.name,p.price,p.partId||''));
   if(!(pc.parts_removed&&pc.parts_removed.length))addPartsRow();
   // タブをリセット
   switchEditTab('basic');
@@ -1345,7 +1371,7 @@ document.getElementById('btn-save-pc-edit').addEventListener('click',async()=>{
     benchFF14:{score:+document.getElementById('edit-bench-ff14-score').value||null,quality:document.getElementById('edit-bench-ff14-quality').value||null,res:document.getElementById('edit-bench-ff14-res').value||null},
     benchMM:{score:+document.getElementById('edit-bench-mm-score').value||null,ver:document.getElementById('edit-bench-mm-ver').value||null},
     benchUBM:{total:+document.getElementById('edit-bench-ubm-total').value||null,cpu:+document.getElementById('edit-bench-ubm-cpu').value||null,gpu:+document.getElementById('edit-bench-ubm-gpu').value||null,ram:+document.getElementById('edit-bench-ubm-ram').value||null,ssd:+document.getElementById('edit-bench-ubm-ssd').value||null,url:document.getElementById('edit-bench-ubm-url').value||null},
-    parts_removed:getPartsRemoved(),
+    parts_removed:await _syncPartsRemoved(getPartsRemoved(),_editPcId,title),
   });
   closeMo('mo-pc-edit');
 });
@@ -1692,7 +1718,7 @@ Object.assign(window,{
   openSell,updateSellProfit,onPlatformChange,onShipSelChange,
   openDel,closeMo,swPanel,openBudgetMo,fetchUBM,applyUBMData,
   sendChat,stopChat,switchAiTab,
-  switchEditTab,addPartsRow,getPartsRemoved,addPartsRowAdd,getPartsRemovedAdd,
+  switchEditTab,addPartsRow,getPartsRemoved,addPartsRowAdd,getPartsRemovedAdd,syncAllExistingPartsRemoved,
 });
 
 // ============================================================
