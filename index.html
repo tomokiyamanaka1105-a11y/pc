@@ -904,6 +904,7 @@ const LISTING_ST = {
   sold_waiting: {label:'📦 発送待ち', cls:'b-warn'},
   sold_shipped: {label:'📮 発送済み', cls:'b-shipped'},
   sold_done:    {label:'✅ 取引完了', cls:'b-done'},
+  cancelled:    {label:'❌ キャンセル', cls:'b-ng'},
 };
 
 // STATE: pcs=PC本体在庫, parts=単品パーツ, cases=案件, listings=出品管理
@@ -1213,12 +1214,14 @@ function renderAll(){
     :_salesFilter==='year'
     ?soldItems.filter(l=>{const d=l.soldDate||l.listedDate||'';return d.startsWith(new Date().getFullYear()+'');})
     :soldItems;
-  const salesTotal=filteredSales.reduce((s,l)=>s+(l.salePrice||0),0);
-  const salesGp=filteredSales.reduce((s,l)=>{const g=grossProfit(l);return s+(g||0);},0);
-  const salesNp=filteredSales.reduce((s,l)=>{const p=listingProfit(l);return s+(p||0);},0);
-  const doneSales=filteredSales.filter(l=>l.status==='sold_done');
+  const activeSales=filteredSales.filter(l=>l.status!=='cancelled');
+  const salesTotal=activeSales.reduce((s,l)=>s+(l.salePrice||0),0);
+  const salesGp=activeSales.reduce((s,l)=>{const g=grossProfit(l);return s+(g||0);},0);
+  const salesNp=activeSales.reduce((s,l)=>{const p=listingProfit(l);return s+(p||0);},0);
+  const doneSales=activeSales.filter(l=>l.status==='sold_done');
+  const cancelledCount=filteredSales.filter(l=>l.status==='cancelled').length;
   document.getElementById('sales-metrics').innerHTML=`
-    <div class="kpi g"><div class="lbl">総売上</div><div class="val">${yen(salesTotal)}</div><div class="sub">完了${doneSales.length}件/全${filteredSales.length}件</div></div>
+    <div class="kpi g"><div class="lbl">総売上</div><div class="val">${yen(salesTotal)}</div><div class="sub">完了${doneSales.length}件/全${activeSales.length}件${cancelledCount?` / キャンセル${cancelledCount}件`:''}</div></div>
     <div class="kpi g"><div class="lbl">粗利 / 純利</div><div class="val">${yen(salesGp)}</div><div class="sub">純利 ${yen(salesNp)} / 利益率 ${salesTotal?((salesNp/salesTotal)*100).toFixed(1):'—'}%</div></div>
   `;
   document.getElementById('sales-list').innerHTML=filteredSales.length
@@ -1429,6 +1432,8 @@ function salesCardHTML(l){
     </div>
     ${l.status!=='sold_done'?`<div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
       <div class="btn sm" onclick="openListingSt('${l.id}')">ステータス変更</div>
+      ${l.status!=='cancelled'?`<div class="btn sm danger" onclick="cancelListing('${l.id}')">❌ キャンセル</div>`:''}
+      ${l.status==='cancelled'?`<div class="btn sm accent" onclick="relistListing('${l.id}')">🔄 出品中に戻す</div>`:''}
     </div>`:''}
   </div>`;
 }
@@ -1599,6 +1604,18 @@ async function setListingSt(st){
   closeMo('mo-listing-st');
 }
 
+async function cancelListing(lid){
+  const l=STATE.listings[lid];if(!l)return;
+  if(!confirm(`「${l.title}」をキャンセルにしますか？\n出品中タブに戻ります。`))return;
+  await fbUpd(`listings/${lid}`,{status:'cancelled',soldDate:null,salePrice:null,fee:null,shipFee:null});
+  // 在庫ステータスを「出品中」に戻す
+  if(l.inventoryType==='pc')await fbUpd(`pcs/${l.inventoryId}`,{status:'listed'});
+  else await fbUpd(`parts/${l.inventoryId}`,{status:'listed'});
+}
+async function relistListing(lid){
+  const l=STATE.listings[lid];if(!l)return;
+  await fbUpd(`listings/${lid}`,{status:'listed'});
+}
 async function delListing(lid){
   const l=STATE.listings[lid];if(!l)return;
   if(!confirm(`「${l.title}」の出品データを削除しますか？\n在庫のステータスは「在庫あり」に戻ります。`))return;
@@ -2139,6 +2156,7 @@ Object.assign(window,{
   assignAllManageNos,listingHTML,salesHTML,listingCardHTML,salesCardHTML,
   openNewListing,onNlInventoryChange,onNlPlatformChange,onNlPriceChange,
   openSellListing,onSlCalc,openListingSt,setListingSt,delListing,setSalesFilter,
+  cancelListing,relistListing,
 });
 
 // ============================================================
