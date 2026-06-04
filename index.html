@@ -1215,57 +1215,11 @@ function caseHTML(c,full){
 // PC本体 操作
 // ============================================================
 
-// PC登録フォームのパーツ価格テーブルを動的生成
-function buildPcPartsTable(){
-  const fields=[
-    {key:'cpu', label:'CPU',   val:()=>document.getElementById('pc-cpu').value},
-    {key:'gpu', label:'GPU',   val:()=>document.getElementById('pc-gpu').value},
-    {key:'ram', label:'RAM',   val:()=>document.getElementById('pc-ram').value},
-    {key:'ssd', label:'SSD',   val:()=>document.getElementById('pc-ssd').value},
-    {key:'psu', label:'電源',  val:()=>document.getElementById('pc-psu').value},
-    {key:'mb',  label:'MB',    val:()=>document.getElementById('pc-mb').value},
-  ];
-  const rows=fields.filter(f=>f.val().trim());
-  const tbl=document.getElementById('ppt-table');
-  tbl.innerHTML=`<div class="ppt-head"><div>パーツ</div><div style="text-align:right">価格（円）</div></div>`;
-  if(!rows.length){
-    tbl.innerHTML+=`<div class="ppt-row"><div style="color:var(--text2);font-size:12px">スペックを入力すると振り分け欄が表示されます</div><div></div></div>`;
-    return;
-  }
-  rows.forEach(f=>{
-    tbl.innerHTML+=`<div class="ppt-row"><div class="ppt-name">${f.label}: ${f.val()}</div><div><input class="ppt-input" type="number" inputmode="numeric" data-key="${f.key}" placeholder="0" min="0" oninput="updatePptTotal()"></div></div>`;
-  });
-  tbl.innerHTML+=`<div class="ppt-total"><div>振り分け合計</div><div id="ppt-total-val" style="text-align:right;color:var(--accent)">¥0</div></div>`;
-}
-
-function updatePptTotal(){
-  const inputs=document.querySelectorAll('.ppt-input');
-  const total=[...inputs].reduce((s,i)=>s+(+i.value||0),0);
-  const costEl=document.getElementById('ppt-total-val');
-  if(costEl)costEl.textContent=yen(total);
-  const budget=+document.getElementById('pc-cost').value||0;
-  if(costEl)costEl.style.color=total>budget?'var(--red)':'var(--accent)';
-}
-
-// スペック入力時にテーブルを再生成
-['pc-cpu','pc-gpu','pc-ram','pc-ssd','pc-psu','pc-mb'].forEach(id=>{
-  document.getElementById(id).addEventListener('input',buildPcPartsTable);
-});
-document.getElementById('pc-cost').addEventListener('input',updatePptTotal);
 
 document.getElementById('btn-add-pc').addEventListener('click',async()=>{
   const title=document.getElementById('pc-title').value.trim();
   if(!title){alert('名称を入力してください');return;}
   const id=uid();
-  // パーツ価格振り分けを収集
-  const inputs=[...document.querySelectorAll('.ppt-input')];
-  const pcParts=inputs.filter(i=>+i.value>0||i.value).map(i=>{
-    const key=i.dataset.key;
-    const labels={cpu:'CPU',gpu:'GPU',ram:'RAM',ssd:'SSD',psu:'電源',mb:'MB'};
-    const cats={cpu:'CPU',gpu:'GPU',ram:'RAM',ssd:'SSD',psu:'PSU',mb:'MB'};
-    const specVal=document.getElementById('pc-'+key)?.value||'';
-    return{name:`${labels[key]}: ${specVal}`,price:+i.value||0,cat:cats[key]||'OTHER'};
-  });
   await fbSet(`pcs/${id}`,{
     id,title,
     cost:+document.getElementById('pc-cost').value||0,
@@ -1279,14 +1233,13 @@ document.getElementById('btn-add-pc').addEventListener('click',async()=>{
     psu:document.getElementById('pc-psu').value,
     mb:document.getElementById('pc-mb').value,
     memo:document.getElementById('pc-memo').value,
-    pcParts,parts_removed:getPartsRemovedAdd(),date:today(),
+    parts_removed:getPartsRemovedAdd(),date:today(),
   });
   ['pc-title','pc-cpu','pc-gpu','pc-ram','pc-ssd','pc-psu','pc-mb','pc-memo'].forEach(i=>document.getElementById(i).value='');
   document.getElementById('pc-cost').value='0';
   document.getElementById('pc-ship').value='0';
   document.getElementById('pc-status').value='stock';
   document.getElementById('add-parts-removed-list').innerHTML='';
-  buildPcPartsTable();
   swPanel('inventory');
 });
 
@@ -1951,7 +1904,6 @@ function switchAiTab(btn, tabId) {
 }
 
 // 初期化
-buildPcPartsTable();
 startSync();
 document.getElementById('loading').style.display='none';
 document.getElementById('app').style.display='block';
