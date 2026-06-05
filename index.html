@@ -330,7 +330,7 @@ button,select,input,textarea{font-family:inherit;font-size:14px;-webkit-appearan
 </div>
 
 <!-- 販売済にするモーダル -->
-<div class="mo" id="mo-sell-listing" onclick="if(event.target===this)closeMo('mo-sell-listing')">
+<div class="mo" id="mo-sell-listing" onclick="if(event.target===this)closeSellListingModal()">
   <div class="mo-box" onclick="event.stopPropagation()">
     <div class="mo-title" id="mo-sell-listing-title">販売情報を入力</div>
     <div class="mo-body">
@@ -361,7 +361,7 @@ button,select,input,textarea{font-family:inherit;font-size:14px;-webkit-appearan
       </div>
       <div class="btn primary full" id="btn-save-sell-listing">保存して売上管理へ</div>
     </div>
-    <div class="mo-cancel" onclick="closeMo('mo-sell-listing')">キャンセル</div>
+    <div class="mo-cancel" onclick="closeSellListingModal()">キャンセル</div>
   </div>
 </div>
 
@@ -1457,11 +1457,12 @@ function salesCardHTML(l){
       ${pl.label?`<span class="chip ch-spec">${pl.label}</span>`:''}
       ${l.soldDate?`<span class="chip" style="background:var(--bg4);color:var(--text2);border-color:var(--border)">${l.soldDate}</span>`:''}
     </div>
-    ${l.status!=='sold_done'?`<div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
-      <div class="btn sm" onclick="openListingSt('${l.id}')">ステータス変更</div>
-      ${l.status!=='cancelled'?`<div class="btn sm danger" onclick="cancelListing('${l.id}')">❌ キャンセル</div>`:''}
+    <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
+      ${l.status!=='sold_done'?`<div class="btn sm" onclick="openListingSt('${l.id}')">ステータス変更</div>`:''}
+      <div class="btn sm" style="background:var(--bg3);color:var(--text2);font-size:11px" onclick="openSellEdit('${l.id}')">✎ 編集</div>
+      ${l.status!=='cancelled'&&l.status!=='sold_done'?`<div class="btn sm danger" onclick="cancelListing('${l.id}')">❌ キャンセル</div>`:''}
       ${l.status==='cancelled'?`<div class="btn sm accent" onclick="relistListing('${l.id}')">🔄 出品中に戻す</div>`:''}
-    </div>`:''}
+    </div>
   </div>`;
 }
 
@@ -1472,7 +1473,7 @@ function salesHTML(c){return '';}
 // ============================================================
 // 出品管理
 // ============================================================
-let _sellListingId=null, _listingStId=null;
+let _sellListingId=null, _listingStId=null, _editSellMode=false;
 
 function setSalesFilter(f){
   _salesFilter=f;
@@ -1602,6 +1603,24 @@ document.getElementById('btn-save-edit-listing').addEventListener('click',async(
   closeMo('mo-edit-listing');
 });
 
+function closeSellListingModal(){
+  _editSellMode=false;
+  document.getElementById('mo-sell-listing-title').textContent='販売情報を入力';
+  document.getElementById('btn-save-sell-listing').textContent='保存して売上管理へ';
+  closeMo('mo-sell-listing');
+}
+function openSellEdit(lid){
+  const l=STATE.listings[lid];if(!l)return;
+  _sellListingId=lid;_editSellMode=true;
+  document.getElementById('mo-sell-listing-title').textContent='売上を編集';
+  document.getElementById('btn-save-sell-listing').textContent='変更を保存';
+  document.getElementById('sl-price').value=l.salePrice||'';
+  document.getElementById('sl-ship').value=l.shipFee||'0';
+  document.getElementById('sl-fee').value=l.fee||'';
+  document.getElementById('sl-status').value=l.status||'sold_done';
+  onSlCalc();
+  openMo('mo-sell-listing');
+}
 function openSellListing(lid){
   _sellListingId=lid;
   const l=STATE.listings[lid];if(!l)return;
@@ -1639,12 +1658,23 @@ document.getElementById('btn-save-sell-listing').addEventListener('click',async(
   const status=document.getElementById('sl-status').value;
   const ship=+document.getElementById('sl-ship').value||0;
   const fee=+document.getElementById('sl-fee').value||0;
-  await fbUpd(`listings/${_sellListingId}`,{
-    salePrice:price,shipFee:ship,fee,status,soldDate:today(),
-    doneDate:status==='sold_done'?today():null,
-  });
-  closeMo('mo-sell-listing');
-  swPanel('sales');
+  if(_editSellMode){
+    await fbUpd(`listings/${_sellListingId}`,{
+      salePrice:price,shipFee:ship,fee,status,updatedAt:Date.now(),
+      doneDate:status==='sold_done'?today():null,
+    });
+    _editSellMode=false;
+    document.getElementById('mo-sell-listing-title').textContent='販売情報を入力';
+    document.getElementById('btn-save-sell-listing').textContent='保存して売上管理へ';
+    closeMo('mo-sell-listing');
+  }else{
+    await fbUpd(`listings/${_sellListingId}`,{
+      salePrice:price,shipFee:ship,fee,status,soldDate:today(),
+      doneDate:status==='sold_done'?today():null,
+    });
+    closeMo('mo-sell-listing');
+    swPanel('sales');
+  }
 });
 
 function openListingSt(lid){
