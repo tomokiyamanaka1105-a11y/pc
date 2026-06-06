@@ -290,6 +290,23 @@ button,select,input,textarea{font-family:inherit;font-size:14px;-webkit-appearan
       <div class="mo-field"><label>出品価格（円）</label>
         <input id="nl-price" type="number" inputmode="numeric" placeholder="15000" min="0" oninput="onNlPriceChange()">
       </div>
+      <!-- 1円スタートトグル -->
+      <div style="display:flex;align-items:center;gap:10px;margin:8px 0 4px">
+        <label class="toggle-wrap" style="display:flex;align-items:center;gap:8px;cursor:pointer">
+          <div class="toggle-track" id="toggle-1yen-track" onclick="toggle1Yen()"
+            style="width:40px;height:22px;background:var(--bg4);border:1px solid var(--border);border-radius:11px;position:relative;transition:background .2s;cursor:pointer">
+            <div id="toggle-1yen-knob"
+              style="width:16px;height:16px;background:var(--text2);border-radius:50%;position:absolute;top:2px;left:2px;transition:left .2s,background .2s"></div>
+          </div>
+          <span style="font-size:12px;color:var(--text2)">1円スタート（ヤフオク入札形式）</span>
+        </label>
+      </div>
+      <!-- 開始価格フィールド（初期非表示） -->
+      <div id="start-price-field" style="display:none;margin-bottom:8px">
+        <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:4px">開始価格（円）</label>
+        <input id="listing-start-price" type="number" inputmode="numeric" value="1"
+          style="width:100%;background:var(--bg3);border:1px solid var(--accent);border-radius:8px;padding:9px 12px;color:var(--accent);font-size:15px;font-weight:700;outline:none">
+      </div>
       <div id="nl-profit-preview" style="background:var(--bg3);border-radius:8px;padding:10px 12px;margin-bottom:12px;display:none">
         <div style="font-size:11px;color:var(--text2);margin-bottom:6px">見込み利益</div>
         <div id="nl-profit-val" style="font-size:20px;font-weight:700;color:var(--green)">—</div>
@@ -938,6 +955,7 @@ const LISTING_ST = {
 // STATE: pcs=PC本体在庫, parts=単品パーツ, cases=案件, listings=出品管理
 let STATE = {pcs:{}, parts:{}, cases:{}, listings:{}};
 let _partStId=null,_pcStId=null,_caseStId=null,_sellCaseId=null;
+let _1yenOn=false;
 let _delType=null,_delId=null,_detachPcId=null;
 let _partsMgrCaseId=null,_partsMgrSelected=new Set();
 let _salesFilter='all';
@@ -986,6 +1004,13 @@ function pcCost(pc){
 }
 // PC本体の仕入れ価格のみ（パーツ除く）
 function pcBaseCost(pc){return (pc.cost||0)+(pc.ship||0);}
+// PCの実質原価（仕入れ＋追加パーツ－取り外しパーツ）
+function pcRealCost(pc){
+  const base=pcBaseCost(pc);
+  const added=(pc.parts_added||[]).reduce((s,p)=>s+(p.price||0),0);
+  const removed=(pc.parts_removed||[]).reduce((s,p)=>s+(p.price||0),0);
+  return base+added-removed;
+}
 // パーツの総コスト
 function partCost(p){return (p.cost||0)+(p.ship||0);}
 
@@ -1488,6 +1513,27 @@ function setSalesFilter(f){
   renderAll();
 }
 
+function toggle1Yen(){
+  _1yenOn=!_1yenOn;
+  const track=document.getElementById('toggle-1yen-track');
+  const knob=document.getElementById('toggle-1yen-knob');
+  const field=document.getElementById('start-price-field');
+  const startInput=document.getElementById('listing-start-price');
+  if(_1yenOn){
+    track.style.background='var(--accent)';
+    knob.style.left='20px';
+    knob.style.background='#000';
+    field.style.display='block';
+    if(startInput)startInput.value=1;
+  }else{
+    track.style.background='var(--bg4)';
+    knob.style.left='2px';
+    knob.style.background='var(--text2)';
+    field.style.display='none';
+  }
+  onNlPriceChange();
+}
+
 function openNewListing(){
   const sel=document.getElementById('nl-inventory-sel');
   sel.innerHTML='<option value="">— 選択してください —</option>';
@@ -1496,7 +1542,7 @@ function openNewListing(){
   pcs().filter(p=>!['sold'].includes(p.status)&&(p.status!=='listed'||cancelledInventoryIds.has(p.id))).forEach(p=>{
     const o=document.createElement('option');
     o.value='pc:'+p.id;
-    o.textContent=`[${p.manageNo||'PC?'}] ${p.title} — 原価${yen(pcBaseCost(p))}`;
+    o.textContent=`[${p.manageNo||'PC?'}] ${p.title} — 実質原価${yen(pcRealCost(p))}`;
     sel.appendChild(o);
   });
   parts().filter(p=>!['sold','used'].includes(p.status)&&(p.status!=='listed'||cancelledInventoryIds.has(p.id))).forEach(p=>{
@@ -1508,6 +1554,13 @@ function openNewListing(){
   document.getElementById('nl-selected-info').style.display='none';
   document.getElementById('nl-profit-preview').style.display='none';
   document.getElementById('nl-price').value='';
+  _1yenOn=false;
+  const _t=document.getElementById('toggle-1yen-track');
+  const _k=document.getElementById('toggle-1yen-knob');
+  const _f=document.getElementById('start-price-field');
+  if(_t){_t.style.background='var(--bg4)';}
+  if(_k){_k.style.left='2px';_k.style.background='var(--text2)';}
+  if(_f){_f.style.display='none';}
   openMo('mo-new-listing');
 }
 
@@ -1517,10 +1570,10 @@ function onNlInventoryChange(){
   if(!val){infoEl.style.display='none';return;}
   const [type,id]=val.split(':');
   let title='',cost=0,manageNo='';
-  if(type==='pc'){const p=STATE.pcs[id];if(p){title=p.title;cost=pcBaseCost(p);manageNo=p.manageNo||'';}}
+  if(type==='pc'){const p=STATE.pcs[id];if(p){title=p.title;cost=pcRealCost(p);manageNo=p.manageNo||'';}}
   else{const p=STATE.parts[id];if(p){title=p.name;cost=partCost(p);manageNo=p.manageNo||'';}}
   document.getElementById('nl-selected-detail').textContent=(manageNo?`[${manageNo}] `:'')+title;
-  document.getElementById('nl-selected-cost').textContent='原価 '+yen(cost);
+  document.getElementById('nl-selected-cost').textContent='実質原価 '+yen(cost);
   infoEl.style.display='block';
   onNlPriceChange();
 }
@@ -1536,13 +1589,18 @@ function onNlPriceChange(){
   if(!val||!price){previewEl.style.display='none';return;}
   const [type,id]=val.split(':');
   let cost=0;
-  if(type==='pc'){const p=STATE.pcs[id];if(p)cost=pcBaseCost(p);}
+  if(type==='pc'){const p=STATE.pcs[id];if(p)cost=pcRealCost(p);}
   else{const p=STATE.parts[id];if(p)cost=partCost(p);}
   const fee=Math.round(price*pl.rate);
   const np=price-cost-fee;
-  document.getElementById('nl-profit-val').textContent=yen(np);
-  document.getElementById('nl-profit-val').style.color=np>=0?'var(--green)':'var(--red)';
-  document.getElementById('nl-profit-detail').innerHTML=`出品額 ${yen(price)} — 原価 ${yen(cost)} — 手数料 ${yen(fee)}(${(pl.rate*100).toFixed(1)}%)`;
+  const profitEl=document.getElementById('nl-profit-val');
+  if(_1yenOn){
+    profitEl.innerHTML=`<span style="color:var(--text2);font-size:11px">1円スタート時の最大利益</span><br><span style="color:${np>=0?'var(--green)':'var(--red)'};font-weight:700">${yen(np)}</span><span style="font-size:10px;color:var(--text3)">（落札価格次第）</span>`;
+  }else{
+    profitEl.textContent=yen(np);
+    profitEl.style.color=np>=0?'var(--green)':'var(--red)';
+  }
+  document.getElementById('nl-profit-detail').innerHTML=`出品額 ${yen(price)} — 実質原価 ${yen(cost)} — 手数料 ${yen(fee)}(${(pl.rate*100).toFixed(1)}%)`;
   previewEl.style.display='block';
 }
 
@@ -1553,13 +1611,14 @@ document.getElementById('btn-save-new-listing').addEventListener('click',async()
   if(!price){alert('出品価格を入力してください');return;}
   const [type,id]=val.split(':');
   let title='',cost=0,manageNo='';
-  if(type==='pc'){const p=STATE.pcs[id];if(p){title=p.title;cost=pcBaseCost(p);manageNo=p.manageNo||'';}}
+  if(type==='pc'){const p=STATE.pcs[id];if(p){title=p.title;cost=pcRealCost(p);manageNo=p.manageNo||'';}}
   else{const p=STATE.parts[id];if(p){title=p.name;cost=partCost(p);manageNo=p.manageNo||'';}}
   const lid=uid();
   await fbSet(`listings/${lid}`,{
     id:lid,inventoryType:type,inventoryId:id,manageNo,title,cost,
     platform:document.getElementById('nl-platform').value,
     listPrice:price,status:'listed',
+    startPrice:_1yenOn?1:null,
     salePrice:null,shipFee:null,fee:null,
     listedDate:today(),soldDate:null,doneDate:null,
   });
@@ -2250,7 +2309,7 @@ Object.assign(window,{
   sendChat,stopChat,switchAiTab,
   switchEditTab,addPartsRow,getPartsRemoved,addPartsRowAdd,getPartsRemovedAdd,syncAllExistingPartsRemoved,
   assignAllManageNos,listingHTML,salesHTML,listingCardHTML,salesCardHTML,
-  openNewListing,onNlInventoryChange,onNlPlatformChange,onNlPriceChange,
+  toggle1Yen,openNewListing,onNlInventoryChange,onNlPlatformChange,onNlPriceChange,
   openSellListing,onSlCalc,openListingSt,setListingSt,delListing,setSalesFilter,
   cancelListing,relistListing,openEditListing,onElCalc,
 });
