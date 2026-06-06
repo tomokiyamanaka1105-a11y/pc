@@ -211,6 +211,7 @@ button,select,input,textarea{font-family:inherit;font-size:14px;-webkit-appearan
   <div class="tab" data-panel="cases">案件管理</div>
   <div class="tab" data-panel="listing">🛒 出品中</div>
   <div class="tab" data-panel="sales">💴 売上管理</div>
+  <div class="tab" data-panel="analytics">📊 分析</div>
   <div class="tab" data-panel="add-pc">＋ PC登録</div>
   <div class="tab" data-panel="add-part">＋ パーツ登録</div>
   <div class="tab" data-panel="add-case">＋ 案件登録</div>
@@ -262,6 +263,15 @@ button,select,input,textarea{font-family:inherit;font-size:14px;-webkit-appearan
     <div class="btn sm"    id="sf-year"  onclick="setSalesFilter('year')">今年</div>
   </div>
   <div id="sales-list"></div>
+</div>
+
+<!-- 売上分析 -->
+<div id="p-analytics" class="panel">
+  <div id="an-kpi" class="metrics" style="grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px"></div>
+  <div id="an-forecast" style="margin-bottom:16px"></div>
+  <div id="an-chart-wrap" style="margin-bottom:16px"></div>
+  <div id="an-platform" style="margin-bottom:16px"></div>
+  <div id="an-top" style="margin-bottom:16px"></div>
 </div>
 
 <!-- 新規出品モーダル -->
@@ -1278,6 +1288,7 @@ function renderAll(){
   document.getElementById('sales-list').innerHTML=filteredSales.length
     ?filteredSales.map(l=>salesCardHTML(l)).join('')
     :'<div class="empty"><div class="empty-icon">💴</div><div class="empty-txt">売上データなし</div></div>';
+  renderAnalytics();
 }
 
 // PC本体カード（小）
@@ -1494,6 +1505,176 @@ function salesCardHTML(l){
 // 旧来の関数（案件管理との互換性維持）
 function listingHTML(c){return'';}
 function salesHTML(c){return '';}
+
+// ============================================================
+// 売上分析
+// ============================================================
+function getMonthKey(dateStr){
+  if(!dateStr)return null;
+  const p=dateStr.split('/');
+  return p.length>=2?p[0]+'/'+p[1]:null;
+}
+
+function renderAnalytics(){
+  const now=new Date();
+  const thisMonthKey=now.getFullYear()+'/'+(now.getMonth()+1);
+  const dayOfMonth=now.getDate();
+  const daysInMonth=new Date(now.getFullYear(),now.getMonth()+1,0).getDate();
+
+  const soldAll=listings().filter(l=>l.status!=='listed'&&l.status!=='cancelled'&&l.salePrice!=null);
+
+  // 今月
+  const thisMonth=soldAll.filter(l=>getMonthKey(l.soldDate||l.listedDate||'')===thisMonthKey);
+  const mSale=thisMonth.reduce((s,l)=>s+(l.salePrice||0),0);
+  const mNp  =thisMonth.reduce((s,l)=>s+(listingProfit(l)||0),0);
+  const mGp  =thisMonth.reduce((s,l)=>s+(grossProfit(l)||0),0);
+  const mRate=mSale?(mNp/mSale*100).toFixed(1):'—';
+  const mRateN=mSale?(mNp/mSale*100):0;
+
+  // KPI（4枚）
+  document.getElementById('an-kpi').innerHTML=`
+    <div class="kpi"><div class="lbl">今月売上</div><div class="val" style="color:var(--accent)">${yen(mSale)}</div><div class="sub">${thisMonth.length}件成約</div></div>
+    <div class="kpi g"><div class="lbl">今月純利</div><div class="val">${yen(mNp)}</div><div class="sub">粗利 ${yen(mGp)}</div></div>
+    <div class="kpi"><div class="lbl">今月利益率</div><div class="val" style="color:${mRateN>=20?'var(--green)':mRateN>=10?'var(--amber)':'var(--red)'}">${mRate}%</div><div class="sub">純利 / 売上</div></div>
+    <div class="kpi a"><div class="lbl">全期間件数</div><div class="val">${soldAll.length}件</div><div class="sub">全期間売上 ${yen(soldAll.reduce((s,l)=>s+(l.salePrice||0),0))}</div></div>
+  `;
+
+  // 日割り着地予想
+  const dailyPace=dayOfMonth>0?mNp/dayOfMonth:0;
+  const forecast=Math.round(dailyPace*daysInMonth);
+  const progressPct=Math.round(dayOfMonth/daysInMonth*100);
+  const fColor=forecast>=0?'var(--green)':'var(--red)';
+  document.getElementById('an-forecast').innerHTML=`
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px 16px">
+      <div style="font-size:11px;color:var(--text2);font-weight:600;margin-bottom:10px">月間着地予想（日割り）</div>
+      <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:10px">
+        <div>
+          <div style="font-size:11px;color:var(--text2);margin-bottom:2px">${dayOfMonth}日経過 / ${daysInMonth}日中</div>
+          <div style="font-size:13px;color:var(--text2)">日割り純利 <b style="color:var(--text);font-size:15px">${yen(Math.round(dailyPace))}/日</b></div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:11px;color:var(--text2);margin-bottom:2px">月末着地予想</div>
+          <div style="font-size:24px;font-weight:700;color:${fColor}">${yen(forecast)}</div>
+        </div>
+      </div>
+      <div style="background:var(--bg3);border-radius:4px;height:8px;overflow:hidden">
+        <div style="height:100%;width:${progressPct}%;background:var(--accent);border-radius:4px"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-top:4px">
+        <span style="font-size:10px;color:var(--text2)">月初</span>
+        <span style="font-size:10px;color:var(--accent);font-weight:600">${progressPct}%経過</span>
+        <span style="font-size:10px;color:var(--text2)">月末</span>
+      </div>
+    </div>
+  `;
+
+  // 月別推移（過去12ヶ月）
+  const monthKeys=[];
+  for(let i=11;i>=0;i--){
+    const d=new Date(now.getFullYear(),now.getMonth()-i,1);
+    const key=d.getFullYear()+'/'+(d.getMonth()+1);
+    const label=(d.getMonth()+1)+'月';
+    const shortLabel=i===0?'今月':(d.getMonth()===0?d.getFullYear()%100+'年':label);
+    monthKeys.push({key,shortLabel});
+  }
+  const monthData=monthKeys.map(({key,shortLabel})=>{
+    const items=soldAll.filter(l=>getMonthKey(l.soldDate||l.listedDate||'')===key);
+    const sale=items.reduce((s,l)=>s+(l.salePrice||0),0);
+    const np=items.reduce((s,l)=>s+(listingProfit(l)||0),0);
+    return{shortLabel,sale,np,count:items.length};
+  });
+  const maxSale=Math.max(...monthData.map(m=>m.sale),1);
+  document.getElementById('an-chart-wrap').innerHTML=`
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px 16px">
+      <div style="font-size:11px;color:var(--text2);font-weight:600;margin-bottom:12px">月別推移（過去12ヶ月）</div>
+      <div style="display:flex;align-items:flex-end;gap:3px;height:90px">
+        ${monthData.map(m=>{
+          const salePct=Math.round((m.sale/maxSale)*100);
+          const npAbs=Math.max(m.np,0);
+          const npPct=Math.round((npAbs/maxSale)*100);
+          return`<div style="flex:1;display:flex;flex-direction:column;align-items:center;height:100%">
+            <div style="flex:1;width:100%;display:flex;flex-direction:column;justify-content:flex-end;position:relative">
+              <div style="width:100%;height:${salePct}%;background:var(--accent);opacity:0.3;border-radius:3px 3px 0 0;position:absolute;bottom:0;left:0"></div>
+              <div style="width:100%;height:${npPct}%;background:${m.np>=0?'var(--green)':'var(--red)'};border-radius:3px 3px 0 0;position:absolute;bottom:0;left:0;opacity:0.85"></div>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+      <div style="display:flex;align-items:flex-end;gap:3px;margin-top:5px">
+        ${monthData.map(m=>`<div style="flex:1;text-align:center;font-size:9px;color:var(--text2);line-height:1.3">${m.shortLabel}${m.count?`<br><span style="color:var(--text3)">${m.count}</span>`:''}</div>`).join('')}
+      </div>
+      <div style="display:flex;gap:14px;margin-top:8px">
+        <div style="display:flex;align-items:center;gap:5px"><div style="width:10px;height:10px;background:var(--accent);opacity:0.5;border-radius:2px"></div><span style="font-size:10px;color:var(--text2)">売上</span></div>
+        <div style="display:flex;align-items:center;gap:5px"><div style="width:10px;height:10px;background:var(--green);border-radius:2px"></div><span style="font-size:10px;color:var(--text2)">純利</span></div>
+      </div>
+    </div>
+  `;
+
+  // プラットフォーム別
+  const pfMap={};
+  soldAll.forEach(l=>{
+    const pf=l.platform||'other';
+    if(!pfMap[pf])pfMap[pf]={label:(PLATFORM[pf]||{label:pf}).label||pf,count:0,sale:0,np:0};
+    pfMap[pf].count++;
+    pfMap[pf].sale+=(l.salePrice||0);
+    pfMap[pf].np+=(listingProfit(l)||0);
+  });
+  const pfRows=Object.values(pfMap).sort((a,b)=>b.np-a.np);
+  const maxPfSale=pfRows.length?Math.max(...pfRows.map(r=>r.sale),1):1;
+  document.getElementById('an-platform').innerHTML=pfRows.length?`
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px 16px">
+      <div style="font-size:11px;color:var(--text2);font-weight:600;margin-bottom:10px">プラットフォーム別（全期間）</div>
+      ${pfRows.map(r=>{
+        const rate=r.sale?(r.np/r.sale*100).toFixed(1):'—';
+        const barPct=Math.round(r.sale/maxPfSale*100);
+        return`<div style="margin-bottom:12px">
+          <div style="display:flex;justify-content:space-between;margin-bottom:3px">
+            <span style="font-size:12px;font-weight:600">${r.label}</span>
+            <span style="font-size:11px;color:var(--text2)">${r.count}件　${yen(r.sale)}</span>
+          </div>
+          <div style="background:var(--bg3);border-radius:4px;height:6px;overflow:hidden;margin-bottom:3px">
+            <div style="height:100%;width:${barPct}%;background:var(--accent);opacity:0.7;border-radius:4px"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between">
+            <span style="font-size:10px;color:var(--green)">純利 ${yen(r.np)}</span>
+            <span style="font-size:10px;color:var(--text2)">利益率 ${rate}%</span>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>
+  `:'';
+
+  // 純利TOP5 / WORST5
+  const ranked=[...soldAll].filter(l=>listingProfit(l)!=null).sort((a,b)=>(listingProfit(b)||0)-(listingProfit(a)||0));
+  const top5=ranked.slice(0,5);
+  const worst5=[...ranked].reverse().slice(0,5);
+  function rankRow(l,i){
+    const np=listingProfit(l)||0;
+    return`<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border)">
+      <div style="font-size:13px;font-weight:700;color:var(--text3);width:18px;text-align:center">${i+1}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${l.title||'—'}</div>
+        <div style="font-size:10px;color:var(--text2)">${(PLATFORM[l.platform]||{label:''}).label||''}　${l.soldDate||''}</div>
+      </div>
+      <div style="text-align:right;flex-shrink:0">
+        <div style="font-size:13px;font-weight:700;color:${np>=0?'var(--green)':'var(--red)'}">${yen(np)}</div>
+        <div style="font-size:10px;color:var(--text2)">${yen(l.salePrice)}</div>
+      </div>
+    </div>`;
+  }
+  document.getElementById('an-top').innerHTML=ranked.length?`
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px 16px">
+        <div style="font-size:11px;color:var(--green);font-weight:600;margin-bottom:8px">純利 TOP 5</div>
+        ${top5.map((l,i)=>rankRow(l,i)).join('')}
+      </div>
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px 16px">
+        <div style="font-size:11px;color:var(--red);font-weight:600;margin-bottom:8px">純利 WORST 5</div>
+        ${worst5.map((l,i)=>rankRow(l,i)).join('')}
+      </div>
+    </div>
+  `:'';
+}
 
 // ============================================================
 // 出品管理
