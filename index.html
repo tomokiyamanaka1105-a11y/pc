@@ -188,6 +188,15 @@ button,select,input,textarea{font-family:inherit;font-size:14px;-webkit-appearan
 .edit-tab-btn{flex:1;padding:9px 6px;font-size:11px;font-weight:600;text-align:center;cursor:pointer;color:var(--text2);background:var(--bg3)}
 .edit-tab-btn.on{background:var(--accent);color:#000}
 .edit-tab-pane{display:none}.edit-tab-pane.on{display:block}
+/* 按分計算 */
+.bunsai-row{display:grid;grid-template-columns:72px 1fr 52px 72px 30px;gap:5px;margin-bottom:7px;align-items:center}
+.bunsai-row select,.bunsai-row input{background:var(--bg3);border:1px solid var(--border);border-radius:7px;color:var(--text);font-size:12px;padding:7px 6px;outline:none;width:100%}
+.bunsai-preview{border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-top:10px}
+.bunsai-preview table{width:100%;border-collapse:collapse}
+.bunsai-preview th,.bunsai-preview td{font-size:11px;padding:6px 8px;border-top:1px solid var(--border);text-align:right}
+.bunsai-preview th:first-child,.bunsai-preview td:first-child{text-align:left}
+.bunsai-preview thead tr{background:var(--bg3)}
+.bunsai-preview th{color:var(--text2);font-weight:600;border-top:none}
 </style>
 </head>
 <body>
@@ -211,6 +220,7 @@ button,select,input,textarea{font-family:inherit;font-size:14px;-webkit-appearan
   <div class="tab" data-panel="cases">案件管理</div>
   <div class="tab" data-panel="listing">🛒 出品中</div>
   <div class="tab" data-panel="sales">💴 売上管理</div>
+  <div class="tab" data-panel="sold-inv">📦 販売済在庫</div>
   <div class="tab" data-panel="analytics">📊 分析</div>
   <div class="tab" data-panel="add-pc">＋ PC登録</div>
   <div class="tab" data-panel="add-part">＋ パーツ登録</div>
@@ -263,6 +273,12 @@ button,select,input,textarea{font-family:inherit;font-size:14px;-webkit-appearan
     <div class="btn sm"    id="sf-year"  onclick="setSalesFilter('year')">今年</div>
   </div>
   <div id="sales-list"></div>
+</div>
+
+<!-- 販売済在庫 -->
+<div id="p-sold-inv" class="panel">
+  <div class="sec-title">販売済PC在庫 <span class="sec-btn" onclick="migrateSoldListings()">既存データを移行</span></div>
+  <div id="sold-inv-list"></div>
 </div>
 
 <!-- 売上分析 -->
@@ -444,6 +460,22 @@ button,select,input,textarea{font-family:inherit;font-size:14px;-webkit-appearan
   </div>
 
   <div class="form-card">
+    <h3>🧮 按分計算（パーツ原価自動按分）</h3>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:12px;line-height:1.6">搭載パーツを選択すると、仕入れ額を相場比率で自動按分して振り分け欄に反映します。</div>
+    <div id="bunsai-rows"></div>
+    <div class="btn sm accent" style="margin-bottom:4px" onclick="addBunsaiRow()">＋ パーツを追加</div>
+    <div id="bunsai-preview" style="display:none">
+      <div class="bunsai-preview">
+        <table>
+          <thead><tr><th>パーツ</th><th>想定売値</th><th>按分率</th><th>按分原価</th></tr></thead>
+          <tbody id="bunsai-tbody"></tbody>
+        </table>
+      </div>
+      <div class="btn sm accent" style="width:100%;margin-top:8px;flex:none" onclick="applyBunsai()">↓ 振り分けに反映する</div>
+    </div>
+  </div>
+
+  <div class="form-card">
     <h3>💸 振り分け（取り外して売るパーツ）</h3>
     <div style="font-size:12px;color:var(--text2);margin-bottom:12px;line-height:1.6">取り外して個別売却予定のパーツ名と回収額を入力。実質原価から差し引かれます。</div>
     <div id="add-parts-removed-list"></div>
@@ -602,6 +634,20 @@ button,select,input,textarea{font-family:inherit;font-size:14px;-webkit-appearan
         <div class="btn sm accent" id="btn-fetch-ubm-case" onclick="fetchUBM('case')">🔍 URLからスコアを自動取得</div>
       </div>
       <div id="ubm-fetch-status-case" style="font-size:11px;color:var(--text2);margin-top:6px;display:none"></div>
+    </div>
+    <div class="bench-wrap">
+      <div style="font-size:10px;font-weight:700;color:var(--accent);margin-bottom:8px">CrystalDiskInfo</div>
+      <div class="form-row">
+        <div class="field"><label>健康状態</label><select id="f-bench-cdi-health"><option value="">—</option><option value="正常">正常</option><option value="注意">注意</option><option value="異常">異常</option></select></div>
+        <div class="field"><label>使用時間(h)</label><input id="f-bench-cdi-hours" type="number" inputmode="numeric" placeholder="1200" min="0"></div>
+      </div>
+    </div>
+    <div class="bench-wrap">
+      <div style="font-size:10px;font-weight:700;color:var(--accent);margin-bottom:8px">CrystalDiskMark</div>
+      <div class="form-row">
+        <div class="field"><label>Seq読込(MB/s)</label><input id="f-bench-dm-read" type="number" inputmode="numeric" placeholder="550" min="0"></div>
+        <div class="field"><label>Seq書込(MB/s)</label><input id="f-bench-dm-write" type="number" inputmode="numeric" placeholder="480" min="0"></div>
+      </div>
     </div>
     <div class="field"><label>メモ</label><textarea id="f-memo" placeholder="電源450W確認済み・メモリ増設必要 など"></textarea></div>
     <div class="btn primary full" id="btn-add-case">案件を登録する</div>
@@ -863,6 +909,16 @@ button,select,input,textarea{font-family:inherit;font-size:14px;-webkit-appearan
         <div class="btn sm accent" onclick="fetchUBM('edit')">🔍 URLからスコアを自動取得</div>
       </div>
       <div id="ubm-fetch-status-edit" style="font-size:11px;color:var(--text2);margin-top:6px;display:none"></div>
+      <div style="font-size:10px;font-weight:700;color:var(--text2);margin:10px 0 6px">CrystalDiskInfo</div>
+      <div class="mo-form-row">
+        <div class="mo-field"><label>健康状態</label><select id="edit-bench-cdi-health"><option value="">—</option><option value="正常">正常</option><option value="注意">注意</option><option value="異常">異常</option></select></div>
+        <div class="mo-field"><label>使用時間(h)</label><input id="edit-bench-cdi-hours" type="number" inputmode="numeric" min="0"></div>
+      </div>
+      <div style="font-size:10px;font-weight:700;color:var(--text2);margin:10px 0 6px">CrystalDiskMark</div>
+      <div class="mo-form-row">
+        <div class="mo-field"><label>Seq読込(MB/s)</label><input id="edit-bench-dm-read" type="number" inputmode="numeric" min="0"></div>
+        <div class="mo-field"><label>Seq書込(MB/s)</label><input id="edit-bench-dm-write" type="number" inputmode="numeric" min="0"></div>
+      </div>
       </div><!-- /edit-tab-basic -->
       <div class="edit-tab-pane" id="edit-tab-parts">
         <div style="font-size:11px;font-weight:600;color:var(--accent);margin-bottom:10px">💸 振り分け（取り外して売るパーツ）</div>
@@ -888,7 +944,7 @@ button,select,input,textarea{font-family:inherit;font-size:14px;-webkit-appearan
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getDatabase,ref,set,onValue,remove,update } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import { getDatabase,ref,set,get,onValue,remove,update } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
 const app = initializeApp({
   apiKey:"AIzaSyB157TcuOz2YWiQj0Kd1KaSw-nxPx5jws8",
@@ -1009,17 +1065,24 @@ function pcPartsList(pc){return Array.isArray(pc.pcParts)?pc.pcParts:[];}
 // PC本体の総コスト
 function pcCost(pc){
   const base=(pc.cost||0)+(pc.ship||0);
-  const partsSum=pcPartsList(pc).reduce((s,p)=>s+(p.price||0),0);
-  return base+partsSum;
+  const partsSum=(pc.pcParts||[]).reduce((s,p)=>s+(p.price||0),0);
+  const removedSum=(pc.parts_removed||[]).reduce((s,p)=>s+(p.price||0),0);
+  return base+partsSum-removedSum;
 }
 // PC本体の仕入れ価格のみ（パーツ除く）
 function pcBaseCost(pc){return (pc.cost||0)+(pc.ship||0);}
 // PCの実質原価（仕入れ＋追加パーツ－取り外しパーツ）
 function pcRealCost(pc){
   const base=pcBaseCost(pc);
-  const added=(pc.parts_added||[]).reduce((s,p)=>s+(p.price||0),0);
+  const added=(pc.pcParts||[]).reduce((s,p)=>s+(p.price||0),0);
   const removed=(pc.parts_removed||[]).reduce((s,p)=>s+(p.price||0),0);
   return base+added-removed;
+}
+function listingCost(l){
+  if(!l)return 0;
+  if(l.inventoryType==='pc'){const p=STATE.pcs[l.inventoryId];return p?pcRealCost(p):l.cost||0;}
+  if(l.inventoryType==='part'){const p=STATE.parts[l.inventoryId];return p?partCost(p):l.cost||0;}
+  return l.cost||0;
 }
 // パーツの総コスト
 function partCost(p){return (p.cost||0)+(p.ship||0);}
@@ -1152,10 +1215,14 @@ function renderBenchBlock(data){
   const ff14=data.benchFF14||{};
   const mm=data.benchMM||{};
   const ubm=data.benchUBM||{};
+  const cdi=data.benchCDI||{};
+  const dm=data.benchDM||{};
   const hasFF14=ff14.score||ff14.quality||ff14.res;
   const hasMM=mm.score||mm.ver;
   const hasUBM=ubm.total||ubm.cpu||ubm.gpu||ubm.ram||ubm.ssd;
-  if(!hasFF14&&!hasMM&&!hasUBM)return'';
+  const hasCDI=cdi.health||cdi.hours;
+  const hasDM=dm.read||dm.write;
+  if(!hasFF14&&!hasMM&&!hasUBM&&!hasCDI&&!hasDM)return'';
   let html='<div style="margin-bottom:8px">';
   if(hasFF14){
     html+=`<div class="bench-block">
@@ -1189,6 +1256,25 @@ function renderBenchBlock(data){
       </div>
     </div>`;
   }
+  if(hasCDI){
+    const healthColor=cdi.health==='正常'?'#22c55e':cdi.health==='注意'?'#f59e0b':'#ef4444';
+    html+=`<div class="bench-block">
+      <div class="bench-block-title">💾 CrystalDiskInfo</div>
+      <div class="bench-grid">
+        ${cdi.health?`<div class="spec-item"><div class="spec-lbl">健康状態</div><div class="spec-val" style="color:${healthColor};font-weight:700">${cdi.health}</div></div>`:''}
+        ${cdi.hours?`<div class="spec-item"><div class="spec-lbl">使用時間</div><div class="spec-val">${Number(cdi.hours).toLocaleString()}h</div></div>`:''}
+      </div>
+    </div>`;
+  }
+  if(hasDM){
+    html+=`<div class="bench-block">
+      <div class="bench-block-title">📀 CrystalDiskMark</div>
+      <div class="bench-grid">
+        ${dm.read?`<div class="spec-item"><div class="spec-lbl">Seq読込</div><div class="spec-val">${Number(dm.read).toLocaleString()} MB/s</div></div>`:''}
+        ${dm.write?`<div class="spec-item"><div class="spec-lbl">Seq書込</div><div class="spec-val">${Number(dm.write).toLocaleString()} MB/s</div></div>`:''}
+      </div>
+    </div>`;
+  }
   html+='</div>';
   return html;
 }
@@ -1203,7 +1289,8 @@ function renderAll(){
   const caseSpent=cc.filter(c=>['inspect','work','bench','photo','list','won','shipped',DONE_ST].includes(c.status))
     .reduce((s,c)=>s+(c.buy||0)+(c.ship||0),0);
   const spent=inv.total+caseSpent;
-  const income=cc.filter(c=>c.status===DONE_ST).reduce((s,c)=>s+(c.sell||0),0);
+  const income=cc.filter(c=>c.status===DONE_ST).reduce((s,c)=>s+(c.sell||0),0)
+    +listings().filter(l=>l.status==='sold_done').reduce((s,l)=>s+(l.salePrice||0),0);
   const remain=BUDGET-spent+income;
   const totalProfit=cc.filter(c=>c.status===DONE_ST).reduce((s,c)=>s+(profit(c)||0),0);
   const active=cc.filter(c=>c.status!==DONE_ST).length;
@@ -1237,13 +1324,20 @@ function renderAll(){
     ?ac.map(c=>caseHTML(c,false)).join('')
     :'<div class="empty"><div class="empty-icon">📋</div><div class="empty-txt">進行中の案件なし</div></div>';
 
-  // 在庫管理：PC
-  document.getElementById('inv-pcs').innerHTML=pcl.length
-    ?pcl.map(p=>pcCardFull(p)).join('')
+  // 在庫管理：PC（soldを除く）
+  const activePcs=pcl.filter(p=>p.status!=='sold');
+  document.getElementById('inv-pcs').innerHTML=activePcs.length
+    ?activePcs.map(p=>pcCardFull(p)).join('')
     :'<div class="empty"><div class="empty-icon">🖥</div><div class="empty-txt">PC在庫なし</div><div class="empty-sub">「＋ PC登録」から追加</div></div>';
 
-  // 在庫管理：単品パーツ
-  const invParts=pp.filter(p=>!['used','sold'].includes(p.status));
+  // 販売済在庫（sold_done listingを起点に描画）
+  const soldListings=listings().filter(l=>l.status==='sold_done');
+  document.getElementById('sold-inv-list').innerHTML=soldListings.length
+    ?soldListings.map(l=>pcCardSold(STATE.pcs[l.inventoryId]||null,l)).join('')
+    :'<div class="empty"><div class="empty-icon">📦</div><div class="empty-txt">販売済PC在庫なし</div></div>';
+
+  // 在庫管理：単品パーツ（組み込み済みを除く）
+  const invParts=pp.filter(p=>!['used','sold'].includes(p.status)&&!p.attachedPcId);
   const invPartsTotal=invParts.reduce((s,p)=>s+partCost(p),0);
   document.getElementById('inv-parts-total').textContent=invParts.length?`合計 ${yen(invPartsTotal)}`:'';
   document.getElementById('inv-parts').innerHTML=invParts.length
@@ -1309,9 +1403,9 @@ function pcCardFull(pc){
   const st=PC_ST[pc.status]||PC_ST.stock;
   const pl=pcPartsList(pc);
   const base=pcBaseCost(pc);
-  const addedTotal=(pc.parts_added||[]).reduce((s,p)=>s+p.price,0);
+  const pcPartsTotal=pl.reduce((s,p)=>s+(p.price||0),0);
   const removedTotal=(pc.parts_removed||[]).reduce((s,p)=>s+p.price,0);
-  const realCost=base+addedTotal-removedTotal;
+  const realCost=base+pcPartsTotal-removedTotal;
   const removedNames=(pc.parts_removed||[]).map(p=>p.name.toLowerCase());
   const isRemoved=(kws)=>removedNames.some(n=>kws.some(k=>n.includes(k)));
   const specDefs=[
@@ -1320,12 +1414,13 @@ function pcCardFull(pc){
   ];
   const specItems=specDefs.filter(([,v])=>v);
   const removedBadge='<span style="font-size:10px;background:#ff446622;color:var(--red);padding:1px 6px;border-radius:4px;margin-left:4px">取り外し済み</span>';
-  const costSummaryHtml=(removedTotal>0||(pc.parts_added||[]).length)?`
+  const hasCostBreakdown=pcPartsTotal>0||removedTotal>0;
+  const costSummaryHtml=hasCostBreakdown?`
 <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:10px">
   <div style="font-size:10px;font-weight:700;color:var(--accent);margin-bottom:8px;text-transform:uppercase">💰 原価計算</div>
   <div style="font-size:12px;line-height:2;color:var(--text2)">
     <div>本体仕入れ <span style="float:right;color:var(--text)">¥${base.toLocaleString()}</span></div>
-    ${(pc.parts_added||[]).map(p=>`<div style="color:var(--green)">＋ ${p.name} <span style="float:right">¥${p.price.toLocaleString()}</span></div>`).join('')}
+    ${pl.map(p=>`<div style="color:var(--green)">＋ ${p.name}（組み込み） <span style="float:right">¥${(p.price||0).toLocaleString()}</span></div>`).join('')}
     ${(pc.parts_removed||[]).map(p=>`<div style="color:var(--red)">－ ${p.name}（振り分け） <span style="float:right">¥${p.price.toLocaleString()}</span></div>`).join('')}
     <div style="border-top:1px solid var(--border);margin-top:6px;padding-top:6px;font-weight:700;color:var(--text)">実質原価 <span style="float:right;font-size:15px;color:var(--accent)">¥${realCost.toLocaleString()}</span></div>
   </div>
@@ -1337,7 +1432,7 @@ function pcCardFull(pc){
     </div>
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap">
       <span style="font-size:14px;font-weight:700;color:var(--amber)">${yen(base)}<span style="font-size:10px;color:var(--text2);font-weight:400"> 仕入</span></span>
-      ${removedTotal>0?`<span style="font-size:12px;color:var(--red)">－ 振り分け ${yen(removedTotal)}</span><span style="font-size:13px;font-weight:700;color:var(--accent)">= ${yen(realCost)}</span>`:pl.length?`<span style="font-size:12px;color:var(--text2)">+ パーツ ${yen(pl.reduce((s,p)=>s+(p.price||0),0))}</span><span style="font-size:13px;font-weight:700;color:var(--accent)">= ${yen(pcCost(pc))}</span>`:""}
+      ${hasCostBreakdown?`${pcPartsTotal>0?`<span style="font-size:12px;color:var(--green)">+ 合算 ${yen(pcPartsTotal)}</span>`:''}${removedTotal>0?`<span style="font-size:12px;color:var(--red)">－ 振り分け ${yen(removedTotal)}</span>`:''}<span style="font-size:13px;font-weight:700;color:var(--accent)">= ${yen(realCost)}</span>`:''}
       <span style="font-size:11px;color:var(--text2)">${pc.cond||''}</span>
     </div>
     ${specItems.length?`<div class="spec-grid">${specItems.map(([l,v,kws])=>{const rm=isRemoved(kws||[]);return`<div class="spec-item${rm?' spec-removed':''}"><div class="spec-lbl">${l}</div><div class="spec-val">${v}${rm?removedBadge:''}</div></div>`;}).join('')}</div>`:''}
@@ -1361,6 +1456,70 @@ function pcCardFull(pc){
       <div class="btn sm accent" onclick="openPcEdit('${pc.id}')">✏️ 編集</div>
       <div class="btn sm danger" onclick="openDel('pc','${pc.id}')">削除</div>
     </div>
+  </div>`;
+}
+
+// 既存の sold_done listings から PC status を sold に一括移行
+async function migrateSoldListings(){
+  const targets=listings().filter(l=>l.status==='sold_done'&&l.inventoryId);
+  if(!targets.length){alert('移行対象のデータがありません');return;}
+  let count=0;
+  await Promise.all(targets.map(async l=>{
+    if(l.inventoryType==='pc'){
+      const pc=STATE.pcs[l.inventoryId];
+      if(pc&&pc.status!=='sold'){await fbUpd(`pcs/${l.inventoryId}`,{status:'sold'});count++;}
+    }else if(l.inventoryType==='part'){
+      const p=STATE.parts[l.inventoryId];
+      if(p&&p.status!=='sold'){await fbUpd(`parts/${l.inventoryId}`,{status:'sold'});count++;}
+    }
+  }));
+  alert(`${count}件を販売済に移行しました`);
+}
+
+// 販売済PCカード（listing必須、pcはnull可）
+function pcCardSold(pc,listing){
+  const salePrice=listing?.salePrice||0;
+  const fee=listing?.fee||0;
+  const ship=listing?.shipFee||0;
+  const plt=PLATFORM[listing?.platform]||{label:listing?.platform||''};
+  const title=pc?.title||listing?.title||'（タイトル不明）';
+  const manageNo=pc?.manageNo||listing?.manageNo||'';
+  // PC在庫データがある場合の詳細情報
+  const pl=pc?pcPartsList(pc):[];
+  const base=pc?pcBaseCost(pc):(listing?.cost||0);
+  const pcPartsTotal=pl.reduce((s,p)=>s+(p.price||0),0);
+  const removedTotal=(pc?.parts_removed||[]).reduce((s,p)=>s+(p.price||0),0);
+  const realCost=base+pcPartsTotal-removedTotal;
+  const np=salePrice-realCost-fee-ship;
+  const specDefs=[['CPU',pc?.cpu],['GPU',pc?.gpu],['RAM',pc?.ram],['SSD',pc?.ssd],['電源',pc?.psu],['MB',pc?.mb]];
+  const specItems=specDefs.filter(([,v])=>v);
+  return`<div class="pc-card" style="border-left:4px solid var(--green)">
+    <div class="pc-card-head">
+      <div class="pc-title">🖥 ${title}${manageNo?` <span style="font-size:10px;font-weight:700;background:var(--bg4);border:1px solid var(--border);border-radius:4px;padding:2px 6px;color:var(--accent);vertical-align:middle;margin-left:4px">${manageNo}</span>`:''}</div>
+      <span class="badge b-done">売却済み</span>
+    </div>
+    <div style="background:#00c87a18;border:1px solid #00c87a40;border-radius:8px;padding:10px 14px;margin-bottom:10px;font-size:12px">
+      <div style="font-weight:700;color:var(--green);margin-bottom:6px">💴 売却情報${plt.label?` (${plt.label})`:''}</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;color:var(--text2)">
+        <span>売値 <b style="color:var(--text)">${yen(salePrice)}</b></span>
+        <span>原価 <b style="color:var(--amber)">${yen(realCost)}</b></span>
+        ${fee?`<span>手数料 <b>${yen(fee)}</b></span>`:''}
+        ${ship?`<span>送料 <b>${yen(ship)}</b></span>`:''}
+        <span>純利 <b style="color:${np>=0?'var(--green)':'var(--red)'}">${yen(np)}</b></span>
+        ${listing?.soldDate?`<span>売却日 <b>${listing.soldDate}</b></span>`:''}
+      </div>
+    </div>
+    ${pc?`<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap">
+      <span style="font-size:13px;color:var(--amber)">${yen(base)}<span style="font-size:10px;color:var(--text2)"> 仕入</span></span>
+      ${pcPartsTotal>0?`<span style="font-size:12px;color:var(--green)">+ 合算 ${yen(pcPartsTotal)}</span>`:''}
+      ${removedTotal>0?`<span style="font-size:12px;color:var(--red)">－ 振り分け ${yen(removedTotal)}</span>`:''}
+      ${pcPartsTotal>0||removedTotal>0?`<span style="font-size:13px;font-weight:700;color:var(--accent)">実質原価 ${yen(realCost)}</span>`:''}
+    </div>`:''}
+    ${specItems.length?`<div class="spec-grid">${specItems.map(([l,v])=>`<div class="spec-item"><div class="spec-lbl">${l}</div><div class="spec-val">${v}</div></div>`).join('')}</div>`:''}
+    ${pc?.memo?`<div style="font-size:11px;color:var(--text2);margin:6px 0">${pc.memo}</div>`:''}
+    ${pc?renderBenchBlock(pc):''}
+    ${pl.length?`<div class="pc-parts-list"><div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:6px">搭載パーツ</div>${pl.map(p=>`<div class="pc-part-row"><span class="pc-part-name">${CAT_ICON[p.cat]||'🔧'} ${p.name}</span><span class="pc-part-price">${yen(p.price)}</span></div>`).join('')}</div>`:''}
+    ${(pc?.parts_removed||[]).length?`<div style="margin-top:8px;font-size:11px;color:var(--text2)">振り分け: ${(pc.parts_removed||[]).map(p=>`${p.name}(${yen(p.price||0)})`).join(' / ')}</div>`:''}
   </div>`;
 }
 
@@ -1814,7 +1973,7 @@ function openEditListing(lid){
   _editListingId=lid;
   const l=STATE.listings[lid];if(!l)return;
   document.getElementById('mo-edit-listing-title').textContent=`編集：${l.title}`;
-  document.getElementById('el-item-info').textContent=`${l.manageNo?'['+l.manageNo+'] ':''}${l.title}　原価 ${yen(l.cost)}`;
+  document.getElementById('el-item-info').textContent=`${l.manageNo?'['+l.manageNo+'] ':''}${l.title}　原価 ${yen(listingCost(l))}`;
   document.getElementById('el-platform').value=l.platform||'yahoo_auction';
   document.getElementById('el-price').value=l.listPrice||'';
   onElCalc();
@@ -1822,7 +1981,7 @@ function openEditListing(lid){
 }
 function onElCalc(){
   const l=_editListingId?STATE.listings[_editListingId]:null;
-  const cost=l?l.cost||0:0;
+  const cost=listingCost(l);
   const price=+document.getElementById('el-price').value||0;
   const platformKey=document.getElementById('el-platform').value;
   const pl=PLATFORM[platformKey]||{rate:0};
@@ -1836,9 +1995,11 @@ document.getElementById('btn-save-edit-listing').addEventListener('click',async(
   if(!_editListingId)return;
   const price=+document.getElementById('el-price').value||0;
   if(!price){alert('出品価格を入力してください');return;}
+  const _l=STATE.listings[_editListingId];
   await fbUpd(`listings/${_editListingId}`,{
     platform:document.getElementById('el-platform').value,
     listPrice:price,
+    cost:listingCost(_l),
   });
   closeMo('mo-edit-listing');
 });
@@ -1877,7 +2038,7 @@ function openSellListing(lid){
 function onSlCalc(){
   const lid=_sellListingId;
   const l=lid?STATE.listings[lid]:null;
-  const cost=l?l.cost||0:0;
+  const cost=listingCost(l);
   const price=+document.getElementById('sl-price').value||0;
   const ship=+document.getElementById('sl-ship').value||0;
   const fee=+document.getElementById('sl-fee').value||0;
@@ -1903,6 +2064,10 @@ document.getElementById('btn-save-sell-listing').addEventListener('click',async(
       salePrice:price,shipFee:ship,fee,status,updatedAt:Date.now(),
       doneDate:status==='sold_done'?today():null,
     });
+    if(status==='sold_done'){
+      const _sl=STATE.listings[_sellListingId];
+      if(_sl?.inventoryId){const _t=_sl.inventoryType==='pc'?'pcs':'parts';await fbUpd(`${_t}/${_sl.inventoryId}`,{status:'sold'});}
+    }
     _editSellMode=false;
     document.getElementById('mo-sell-listing-title').textContent='販売情報を入力';
     document.getElementById('btn-save-sell-listing').textContent='保存して売上管理へ';
@@ -1912,6 +2077,10 @@ document.getElementById('btn-save-sell-listing').addEventListener('click',async(
       salePrice:price,shipFee:ship,fee,status,soldDate:today(),
       doneDate:status==='sold_done'?today():null,
     });
+    if(status==='sold_done'){
+      const _sl=STATE.listings[_sellListingId];
+      if(_sl?.inventoryId){const _t=_sl.inventoryType==='pc'?'pcs':'parts';await fbUpd(`${_t}/${_sl.inventoryId}`,{status:'sold'});}
+    }
     closeMo('mo-sell-listing');
     swPanel('sales');
   }
@@ -1932,7 +2101,14 @@ async function setListingSt(st){
   if(!_listingStId)return;
   const upd={status:st};
   if(['sold_pending','sold_waiting','sold_shipped','sold_done'].includes(st)&&!STATE.listings[_listingStId]?.soldDate)upd.soldDate=today();
-  if(st==='sold_done')upd.doneDate=today();
+  if(st==='sold_done'){
+    upd.doneDate=today();
+    const l=STATE.listings[_listingStId];
+    if(l?.inventoryId){
+      const table=l.inventoryType==='pc'?'pcs':'parts';
+      await fbUpd(`${table}/${l.inventoryId}`,{status:'sold'});
+    }
+  }
   await fbUpd(`listings/${_listingStId}`,upd);
   closeMo('mo-listing-st');
 }
@@ -2087,6 +2263,76 @@ function getPartsRemovedAdd(){return _collectPartsRemoved('add-parts-removed-lis
 function addPartsRow(name='',price='',partId=''){_makePartsRow('parts-removed-list',name,price,partId);}
 function getPartsRemoved(){return _collectPartsRemoved('parts-removed-list');}
 
+// ============================================================
+// 按分計算
+// ============================================================
+let _bunsaiPrices=null;
+async function _loadBunsaiPrices(){
+  if(_bunsaiPrices)return _bunsaiPrices;
+  try{const snap=await get(ref(db,'prices'));_bunsaiPrices=snap.val()||{};}
+  catch(e){_bunsaiPrices={};}
+  return _bunsaiPrices;
+}
+const BUNSAI_CATS={GPU:['GPU','グラボ'],CPU:['CPU'],RAM:['メモリ','RAM','DDR'],SSD:['SSD','HDD','NVMe']};
+async function addBunsaiRow(){
+  const prices=await _loadBunsaiPrices();
+  const keywords=Object.keys(prices).sort();
+  const list=document.getElementById('bunsai-rows');
+  const row=document.createElement('div');
+  row.className='bunsai-row';
+  const kwOpts=`<option value="">— 選択 —</option>`+keywords.map(k=>`<option value="${k}">${k}</option>`).join('');
+  row.innerHTML=`<select class="br-cat" onchange="filterBunsaiKw(this)"><option value="GPU">GPU</option><option value="CPU">CPU</option><option value="RAM">RAM</option><option value="SSD">SSD</option></select><select class="br-kw" onchange="calcBunsai()">${kwOpts}</select><input type="number" class="br-qty" min="1" value="1" placeholder="個" style="text-align:center" oninput="calcBunsai()"><span class="br-avg" style="font-size:11px;color:var(--text2);text-align:right;padding-right:2px">—</span><div class="btn sm" style="background:var(--bg3);border:1px solid #ff446644;color:var(--red);flex:none;width:30px;min-height:30px;padding:0" onclick="this.parentElement.remove();calcBunsai()">✕</div>`;
+  list.appendChild(row);
+  filterBunsaiKw(row.querySelector('.br-cat'));
+}
+async function filterBunsaiKw(sel){
+  const prices=await _loadBunsaiPrices();
+  const cat=sel.value;
+  const keywords=Object.keys(prices).sort();
+  const hints=BUNSAI_CATS[cat]||[];
+  const filtered=keywords.filter(k=>hints.some(h=>k.toLowerCase().includes(h.toLowerCase())));
+  const show=filtered.length?filtered:keywords;
+  const kwSel=sel.parentElement.querySelector('.br-kw');
+  kwSel.innerHTML=`<option value="">— 選択 —</option>`+show.map(k=>`<option value="${k}">${k}</option>`).join('');
+  calcBunsai();
+}
+async function calcBunsai(){
+  const prices=await _loadBunsaiPrices();
+  const rows=[...document.querySelectorAll('#bunsai-rows .bunsai-row')];
+  if(!rows.length){document.getElementById('bunsai-preview').style.display='none';return;}
+  const totalBuy=(+document.getElementById('pc-cost').value||0)+(+document.getElementById('pc-ship').value||0);
+  const items=rows.map(row=>{
+    const kw=row.querySelector('.br-kw').value;
+    const qty=+row.querySelector('.br-qty').value||1;
+    const avgSpan=row.querySelector('.br-avg');
+    let avg=0;
+    if(kw&&prices[kw]){avg=Math.round((prices[kw].avg||0)*qty);avgSpan.textContent='¥'+avg.toLocaleString();avgSpan.style.color='var(--text)';}
+    else{avgSpan.textContent='—';avgSpan.style.color='var(--text2)';}
+    return{kw,qty,avg};
+  });
+  const totalAvg=items.reduce((s,i)=>s+i.avg,0);
+  if(!totalAvg||!totalBuy){document.getElementById('bunsai-preview').style.display='none';return;}
+  const tbody=document.getElementById('bunsai-tbody');
+  tbody.innerHTML=items.map(item=>{
+    const rate=item.avg/totalAvg;
+    const cost=Math.round(totalBuy*rate);
+    return`<tr><td>${item.kw||'—'}</td><td>¥${item.avg.toLocaleString()}</td><td>${(rate*100).toFixed(1)}%</td><td style="color:var(--accent);font-weight:600">¥${cost.toLocaleString()}</td></tr>`;
+  }).join('');
+  document.getElementById('bunsai-preview').style.display='block';
+}
+async function applyBunsai(){
+  const prices=await _loadBunsaiPrices();
+  const rows=[...document.querySelectorAll('#bunsai-rows .bunsai-row')];
+  const totalBuy=(+document.getElementById('pc-cost').value||0)+(+document.getElementById('pc-ship').value||0);
+  const items=rows.map(row=>({kw:row.querySelector('.br-kw').value,qty:+row.querySelector('.br-qty').value||1,avg:row.querySelector('.br-kw').value&&prices[row.querySelector('.br-kw').value]?Math.round((prices[row.querySelector('.br-kw').value].avg||0)*(+row.querySelector('.br-qty').value||1)):0})).filter(i=>i.kw&&i.avg>0);
+  const totalAvg=items.reduce((s,i)=>s+i.avg,0);
+  if(!totalAvg||!totalBuy){alert('仕入れ額または相場データが不足しています');return;}
+  items.forEach(item=>{const cost=Math.round(totalBuy*(item.avg/totalAvg));addPartsRowAdd(item.kw,cost);});
+  document.getElementById('bunsai-rows').innerHTML='';
+  document.getElementById('bunsai-preview').style.display='none';
+  _bunsaiPrices=null;
+}
+
 // PC編集
 let _editPcId=null;
 function openPcEdit(id){
@@ -2101,7 +2347,7 @@ function openPcEdit(id){
   Object.entries(fields).forEach(([id,val])=>{const el=document.getElementById(id);if(el)el.value=val;});
   document.getElementById('edit-pc-status').value=pc.status||'stock';
   document.getElementById('edit-pc-cond').value=pc.cond||'動作確認済み';
-  const ff14=pc.benchFF14||{};const mm=pc.benchMM||{};const ubm=pc.benchUBM||{};
+  const ff14=pc.benchFF14||{};const mm=pc.benchMM||{};const ubm=pc.benchUBM||{};const cdi=pc.benchCDI||{};const dm=pc.benchDM||{};
   document.getElementById('edit-bench-ff14-score').value=ff14.score||'';
   document.getElementById('edit-bench-ff14-quality').value=ff14.quality||'';
   document.getElementById('edit-bench-ff14-res').value=ff14.res||'';
@@ -2113,6 +2359,10 @@ function openPcEdit(id){
   document.getElementById('edit-bench-ubm-ram').value=ubm.ram||'';
   document.getElementById('edit-bench-ubm-ssd').value=ubm.ssd||'';
   document.getElementById('edit-bench-ubm-url').value=ubm.url||'';
+  document.getElementById('edit-bench-cdi-health').value=cdi.health||'';
+  document.getElementById('edit-bench-cdi-hours').value=cdi.hours||'';
+  document.getElementById('edit-bench-dm-read').value=dm.read||'';
+  document.getElementById('edit-bench-dm-write').value=dm.write||'';
   // 振り分けリスト読み込み
   document.getElementById('parts-removed-list').innerHTML='';
   (pc.parts_removed||[]).forEach(p=>addPartsRow(p.name,p.price,p.partId||''));
@@ -2141,6 +2391,8 @@ document.getElementById('btn-save-pc-edit').addEventListener('click',async()=>{
     benchFF14:{score:+document.getElementById('edit-bench-ff14-score').value||null,quality:document.getElementById('edit-bench-ff14-quality').value||null,res:document.getElementById('edit-bench-ff14-res').value||null},
     benchMM:{score:+document.getElementById('edit-bench-mm-score').value||null,ver:document.getElementById('edit-bench-mm-ver').value||null},
     benchUBM:{total:+document.getElementById('edit-bench-ubm-total').value||null,cpu:+document.getElementById('edit-bench-ubm-cpu').value||null,gpu:+document.getElementById('edit-bench-ubm-gpu').value||null,ram:+document.getElementById('edit-bench-ubm-ram').value||null,ssd:+document.getElementById('edit-bench-ubm-ssd').value||null,url:document.getElementById('edit-bench-ubm-url').value||null},
+    benchCDI:{health:document.getElementById('edit-bench-cdi-health').value||null,hours:+document.getElementById('edit-bench-cdi-hours').value||null},
+    benchDM:{read:+document.getElementById('edit-bench-dm-read').value||null,write:+document.getElementById('edit-bench-dm-write').value||null},
     parts_removed:await _syncPartsRemoved(getPartsRemoved(),_editPcId,title),
   });
   closeMo('mo-pc-edit');
@@ -2256,11 +2508,18 @@ function openAttachToPc(partId){
 async function attachPartToPc(partId,pcId){
   const p=STATE.parts[partId];const pc=STATE.pcs[pcId];
   if(!p||!pc)return;
-  // PCのpcPartsに追加
   const pl=[...pcPartsList(pc)];
   pl.push({name:p.name,price:(p.cost||0)+(p.ship||0),cat:p.cat||'OTHER'});
-  await fbUpd(`pcs/${pcId}`,{pcParts:pl});
-  // パーツを「組込み済み」に
+  // カテゴリに対応するPCスペックフィールドを自動更新（空欄のみ上書き）
+  const specUpdate={};
+  const cat=p.cat||'OTHER';
+  if(cat==='CPU'&&!pc.cpu)specUpdate.cpu=p.name;
+  else if(cat==='GPU'&&!pc.gpu)specUpdate.gpu=p.name;
+  else if(cat==='RAM'&&!pc.ram)specUpdate.ram=p.name;
+  else if(cat==='SSD'&&!pc.ssd)specUpdate.ssd=p.name;
+  else if(cat==='PSU'&&!pc.psu)specUpdate.psu=p.name;
+  else if(cat==='MB'&&!pc.mb)specUpdate.mb=p.name;
+  await fbUpd(`pcs/${pcId}`,{pcParts:pl,...specUpdate});
   await fbUpd(`parts/${partId}`,{status:'used',caseId:null,attachedPcId:pcId});
   closeMo('mo-parts-mgr');
   document.getElementById('btn-save-parts').style.display='';
@@ -2338,9 +2597,11 @@ document.getElementById('btn-add-case').addEventListener('click',async()=>{
     benchFF14:{score:+document.getElementById('f-bench-ff14-score').value||null,quality:document.getElementById('f-bench-ff14-quality').value||null,res:document.getElementById('f-bench-ff14-res').value||null},
     benchMM:{score:+document.getElementById('f-bench-mm-score').value||null,ver:document.getElementById('f-bench-mm-ver').value||null},
     benchUBM:{total:+document.getElementById('f-bench-ubm-total').value||null,cpu:+document.getElementById('f-bench-ubm-cpu').value||null,gpu:+document.getElementById('f-bench-ubm-gpu').value||null,ram:+document.getElementById('f-bench-ubm-ram').value||null,ssd:+document.getElementById('f-bench-ubm-ssd').value||null,url:document.getElementById('f-bench-ubm-url').value||null},
+    benchCDI:{health:document.getElementById('f-bench-cdi-health').value||null,hours:+document.getElementById('f-bench-cdi-hours').value||null},
+    benchDM:{read:+document.getElementById('f-bench-dm-read').value||null,write:+document.getElementById('f-bench-dm-write').value||null},
     date:today(),doneDate:null,
   });
-  ['f-title','f-buy','f-cpu','f-gpu','f-ram','f-ssd','f-psu','f-memo','f-bench-ff14-score','f-bench-ff14-quality','f-bench-ff14-res','f-bench-mm-score','f-bench-mm-ver','f-bench-ubm-total','f-bench-ubm-cpu','f-bench-ubm-gpu','f-bench-ubm-ram','f-bench-ubm-ssd','f-bench-ubm-url'].forEach(i=>document.getElementById(i).value='');
+  ['f-title','f-buy','f-cpu','f-gpu','f-ram','f-ssd','f-psu','f-memo','f-bench-ff14-score','f-bench-ff14-quality','f-bench-ff14-res','f-bench-mm-score','f-bench-mm-ver','f-bench-ubm-total','f-bench-ubm-cpu','f-bench-ubm-gpu','f-bench-ubm-ram','f-bench-ubm-ssd','f-bench-ubm-url','f-bench-cdi-health','f-bench-cdi-hours','f-bench-dm-read','f-bench-dm-write'].forEach(i=>document.getElementById(i).value='');
   document.getElementById('f-ship').value='0';document.getElementById('f-list-price').value='0';
   document.getElementById('f-fee').value='5500';document.getElementById('f-status').value='watch';
   swPanel('cases');
@@ -2492,7 +2753,7 @@ Object.assign(window,{
   assignAllManageNos,listingHTML,salesHTML,listingCardHTML,salesCardHTML,
   toggle1Yen,openNewListing,onNlInventoryChange,onNlPlatformChange,onNlPriceChange,
   openSellListing,onSlCalc,openListingSt,setListingSt,delListing,setSalesFilter,
-  cancelListing,relistListing,openEditListing,onElCalc,
+  cancelListing,relistListing,openEditListing,onElCalc,openSellEdit,migrateSoldListings,
 });
 
 // ============================================================
