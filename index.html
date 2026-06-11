@@ -2861,6 +2861,7 @@ async function lsGenerate(){
       body:JSON.stringify({itemType:type,item,platform,prices}),
     });
     const data=await res.json();
+    if(data.error){alert('APIエラー: '+data.error);return;}
     lsShowResult(data);
   }catch(e){
     alert('生成エラー: '+e.message);

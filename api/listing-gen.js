@@ -86,13 +86,22 @@ export default async function handler(req) {
       'anthropic-version': '2023-06-01',
     },
     body: JSON.stringify({
-      model: 'claude-sonnet-4-6',
+      model: 'claude-haiku-4-5-20251001',
       max_tokens: 1500,
       messages: [{ role: 'user', content: prompt }],
     }),
   });
 
   const data = await res.json();
+
+  // APIエラーをそのまま返す
+  if (data.error) {
+    return new Response(JSON.stringify({ error: data.error.message || JSON.stringify(data.error) }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+    });
+  }
+
   const raw = data.content?.[0]?.text || '';
 
   let result;
