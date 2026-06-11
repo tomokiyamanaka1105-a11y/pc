@@ -2276,24 +2276,25 @@ async function _loadBunsaiPrices(){
 const BUNSAI_CATS={GPU:['GPU','グラボ'],CPU:['CPU'],RAM:['メモリ','RAM','DDR'],SSD:['SSD','HDD','NVMe']};
 async function addBunsaiRow(){
   const prices=await _loadBunsaiPrices();
-  const keywords=Object.keys(prices).sort();
   const list=document.getElementById('bunsai-rows');
   const row=document.createElement('div');
   row.className='bunsai-row';
-  const kwOpts=`<option value="">— 選択 —</option>`+keywords.map(k=>`<option value="${k}">${k}</option>`).join('');
+  const kwOpts=_bunsaiOpts(Object.keys(prices),prices);
   row.innerHTML=`<select class="br-cat" onchange="filterBunsaiKw(this)"><option value="GPU">GPU</option><option value="CPU">CPU</option><option value="RAM">RAM</option><option value="SSD">SSD</option></select><select class="br-kw" onchange="calcBunsai()">${kwOpts}</select><input type="number" class="br-qty" min="1" value="1" placeholder="個" style="text-align:center" oninput="calcBunsai()"><span class="br-avg" style="font-size:11px;color:var(--text2);text-align:right;padding-right:2px">—</span><div class="btn sm" style="background:var(--bg3);border:1px solid #ff446644;color:var(--red);flex:none;width:30px;min-height:30px;padding:0" onclick="this.parentElement.remove();calcBunsai()">✕</div>`;
   list.appendChild(row);
   filterBunsaiKw(row.querySelector('.br-cat'));
 }
+function _bunsaiOpts(keys,prices){
+  return`<option value="">— 選択 —</option>`+keys.sort().map(k=>`<option value="${k}">${prices[k]?.label||k}</option>`).join('');
+}
 async function filterBunsaiKw(sel){
   const prices=await _loadBunsaiPrices();
   const cat=sel.value;
-  const keywords=Object.keys(prices).sort();
   const hints=BUNSAI_CATS[cat]||[];
-  const filtered=keywords.filter(k=>hints.some(h=>k.toLowerCase().includes(h.toLowerCase())));
-  const show=filtered.length?filtered:keywords;
-  const kwSel=sel.parentElement.querySelector('.br-kw');
-  kwSel.innerHTML=`<option value="">— 選択 —</option>`+show.map(k=>`<option value="${k}">${k}</option>`).join('');
+  const keys=Object.keys(prices).sort();
+  const filtered=keys.filter(k=>{const lbl=(prices[k]?.label||k).toLowerCase();return hints.some(h=>lbl.includes(h.toLowerCase()));});
+  const show=filtered.length?filtered:keys;
+  sel.parentElement.querySelector('.br-kw').innerHTML=_bunsaiOpts(show,prices);
   calcBunsai();
 }
 async function calcBunsai(){
@@ -2305,10 +2306,11 @@ async function calcBunsai(){
     const kw=row.querySelector('.br-kw').value;
     const qty=+row.querySelector('.br-qty').value||1;
     const avgSpan=row.querySelector('.br-avg');
+    const label=prices[kw]?.label||kw;
     let avg=0;
     if(kw&&prices[kw]){avg=Math.round((prices[kw].avg||0)*qty);avgSpan.textContent='¥'+avg.toLocaleString();avgSpan.style.color='var(--text)';}
     else{avgSpan.textContent='—';avgSpan.style.color='var(--text2)';}
-    return{kw,qty,avg};
+    return{kw,label,qty,avg};
   });
   const totalAvg=items.reduce((s,i)=>s+i.avg,0);
   if(!totalAvg||!totalBuy){document.getElementById('bunsai-preview').style.display='none';return;}
@@ -2316,7 +2318,7 @@ async function calcBunsai(){
   tbody.innerHTML=items.map(item=>{
     const rate=item.avg/totalAvg;
     const cost=Math.round(totalBuy*rate);
-    return`<tr><td>${item.kw||'—'}</td><td>¥${item.avg.toLocaleString()}</td><td>${(rate*100).toFixed(1)}%</td><td style="color:var(--accent);font-weight:600">¥${cost.toLocaleString()}</td></tr>`;
+    return`<tr><td>${item.label||'—'}</td><td>¥${item.avg.toLocaleString()}</td><td>${(rate*100).toFixed(1)}%</td><td style="color:var(--accent);font-weight:600">¥${cost.toLocaleString()}</td></tr>`;
   }).join('');
   document.getElementById('bunsai-preview').style.display='block';
 }
@@ -2324,10 +2326,16 @@ async function applyBunsai(){
   const prices=await _loadBunsaiPrices();
   const rows=[...document.querySelectorAll('#bunsai-rows .bunsai-row')];
   const totalBuy=(+document.getElementById('pc-cost').value||0)+(+document.getElementById('pc-ship').value||0);
-  const items=rows.map(row=>({kw:row.querySelector('.br-kw').value,qty:+row.querySelector('.br-qty').value||1,avg:row.querySelector('.br-kw').value&&prices[row.querySelector('.br-kw').value]?Math.round((prices[row.querySelector('.br-kw').value].avg||0)*(+row.querySelector('.br-qty').value||1)):0})).filter(i=>i.kw&&i.avg>0);
+  const items=rows.map(row=>{
+    const kw=row.querySelector('.br-kw').value;
+    const qty=+row.querySelector('.br-qty').value||1;
+    const label=prices[kw]?.label||kw;
+    const avg=kw&&prices[kw]?Math.round((prices[kw].avg||0)*qty):0;
+    return{kw,label,qty,avg};
+  }).filter(i=>i.kw&&i.avg>0);
   const totalAvg=items.reduce((s,i)=>s+i.avg,0);
   if(!totalAvg||!totalBuy){alert('仕入れ額または相場データが不足しています');return;}
-  items.forEach(item=>{const cost=Math.round(totalBuy*(item.avg/totalAvg));addPartsRowAdd(item.kw,cost);});
+  items.forEach(item=>{const cost=Math.round(totalBuy*(item.avg/totalAvg));addPartsRowAdd(item.label,cost);});
   document.getElementById('bunsai-rows').innerHTML='';
   document.getElementById('bunsai-preview').style.display='none';
   _bunsaiPrices=null;
