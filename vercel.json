@@ -5,6 +5,9 @@
     },
     "api/chat.js": {
       "maxDuration": 60
+    },
+    "api/listing-gen.js": {
+      "maxDuration": 30
     }
   }
 }

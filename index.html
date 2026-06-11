@@ -225,6 +225,7 @@ button,select,input,textarea{font-family:inherit;font-size:14px;-webkit-appearan
   <div class="tab" data-panel="add-pc">＋ PC登録</div>
   <div class="tab" data-panel="add-part">＋ パーツ登録</div>
   <div class="tab" data-panel="add-case">＋ 案件登録</div>
+  <div class="tab" data-panel="listing-support">✍️ 出品サポート</div>
   <div class="tab" data-panel="chat">💬 AIチャット</div>
   <div class="tab" data-panel="policy">仕入れ方針</div>
 </div>
@@ -651,6 +652,81 @@ button,select,input,textarea{font-family:inherit;font-size:14px;-webkit-appearan
     </div>
     <div class="field"><label>メモ</label><textarea id="f-memo" placeholder="電源450W確認済み・メモリ増設必要 など"></textarea></div>
     <div class="btn primary full" id="btn-add-case">案件を登録する</div>
+  </div>
+</div>
+
+<!-- 出品サポート -->
+<div id="p-listing-support" class="panel">
+  <div class="form-card">
+    <h3>✍️ 出品タイトル・文章・価格提案</h3>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:14px;line-height:1.6">在庫を選択してAIが出品文・相場ベースの販売価格を自動生成します。</div>
+
+    <div class="form-row">
+      <div class="field">
+        <label>商品種別</label>
+        <select id="ls-type" onchange="lsPopulateItems()">
+          <option value="pc">PC本体</option>
+          <option value="part">単品パーツ</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>出品プラットフォーム</label>
+        <select id="ls-platform">
+          <option value="yahoo_auction">ヤフオク</option>
+          <option value="mercari">メルカリ</option>
+          <option value="yahoo_flea">ヤフーフリマ</option>
+          <option value="ebay">eBay</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>在庫アイテム</label>
+      <select id="ls-item"></select>
+    </div>
+
+    <div class="btn primary" id="btn-ls-gen" onclick="lsGenerate()" style="font-size:13px">🤖 AI生成する</div>
+  </div>
+
+  <!-- 結果エリア -->
+  <div id="ls-result" style="display:none">
+    <div class="form-card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <h3 style="margin:0">📝 出品タイトル</h3>
+        <div class="btn sm accent" style="flex:none;width:auto" onclick="lsCopy('ls-title-out')">コピー</div>
+      </div>
+      <div id="ls-title-out" style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px;font-size:14px;line-height:1.6;white-space:pre-wrap;word-break:break-all"></div>
+      <div id="ls-title-char" style="font-size:11px;color:var(--text2);text-align:right;margin-top:4px"></div>
+    </div>
+
+    <div class="form-card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <h3 style="margin:0">📄 出品文</h3>
+        <div class="btn sm accent" style="flex:none;width:auto" onclick="lsCopy('ls-desc-out')">コピー</div>
+      </div>
+      <div id="ls-desc-out" style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px;font-size:13px;line-height:1.8;white-space:pre-wrap;word-break:break-all"></div>
+    </div>
+
+    <div class="form-card">
+      <h3>💰 販売価格提案</h3>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+        <div style="background:var(--bg3);border:1px solid var(--accent);border-radius:8px;padding:12px;text-align:center">
+          <div style="font-size:11px;color:var(--text2);margin-bottom:4px">AI提案価格</div>
+          <div id="ls-price-out" style="font-size:22px;font-weight:700;color:var(--accent)">—</div>
+        </div>
+        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center">
+          <div style="font-size:11px;color:var(--text2);margin-bottom:4px">粗利見込み</div>
+          <div id="ls-profit-out" style="font-size:22px;font-weight:700;color:var(--green)">—</div>
+        </div>
+      </div>
+      <div id="ls-reason-out" style="font-size:12px;color:var(--text2);line-height:1.7;background:var(--bg3);border-radius:8px;padding:10px"></div>
+      <div id="ls-keywords-out" style="margin-top:10px;display:flex;flex-wrap:wrap;gap:6px"></div>
+    </div>
+  </div>
+
+  <div id="ls-loading" style="display:none;padding:30px;text-align:center">
+    <div class="spinner" style="margin:0 auto 12px"></div>
+    <div style="font-size:13px;color:var(--text2)">AIが生成中...</div>
   </div>
 </div>
 
@@ -2747,7 +2823,70 @@ document.getElementById('tabs').addEventListener('click',e=>{
 function swPanel(id){
   document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on',t.dataset.panel===id));
   document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('on',p.id==='p-'+id));
+  if(id==='listing-support')lsPopulateItems();
   window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// ============================================================
+// 出品サポート
+// ============================================================
+function lsPopulateItems(){
+  const type=document.getElementById('ls-type').value;
+  const sel=document.getElementById('ls-item');
+  const items=type==='pc'?pcs():parts();
+  sel.innerHTML=items.length
+    ?items.map(i=>`<option value="${i.id}">${i.manageNo?`[${i.manageNo}] `:''} ${(i.title||i.name||'').substring(0,40)}</option>`).join('')
+    :`<option value="">— アイテムなし —</option>`;
+}
+async function lsGenerate(){
+  const type=document.getElementById('ls-type').value;
+  const itemId=document.getElementById('ls-item').value;
+  const platform=document.getElementById('ls-platform').value;
+  if(!itemId){alert('アイテムを選択してください');return;}
+  const item=type==='pc'?STATE.pcs[itemId]:STATE.parts[itemId];
+  if(!item){alert('アイテムが見つかりません');return;}
+
+  document.getElementById('ls-result').style.display='none';
+  document.getElementById('ls-loading').style.display='block';
+  document.getElementById('btn-ls-gen').style.pointerEvents='none';
+
+  // Firebase から関連相場を取得
+  let prices={};
+  try{const snap=await get(ref(db,'prices'));prices=snap.val()||{};}catch(e){}
+
+  try{
+    const res=await fetch('/api/listing-gen',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({itemType:type,item,platform,prices}),
+    });
+    const data=await res.json();
+    lsShowResult(data);
+  }catch(e){
+    alert('生成エラー: '+e.message);
+  }finally{
+    document.getElementById('ls-loading').style.display='none';
+    document.getElementById('btn-ls-gen').style.pointerEvents='';
+  }
+}
+function lsShowResult(d){
+  document.getElementById('ls-title-out').textContent=d.title||'';
+  document.getElementById('ls-title-char').textContent=`${(d.title||'').length}文字`;
+  document.getElementById('ls-desc-out').textContent=(d.description||'').replace(/\\n/g,'\n');
+  document.getElementById('ls-price-out').textContent=d.suggestedPrice?'¥'+Math.round(d.suggestedPrice).toLocaleString():'—';
+  document.getElementById('ls-profit-out').textContent=d.profitEstimate!=null?'¥'+Math.round(d.profitEstimate).toLocaleString():'—';
+  document.getElementById('ls-reason-out').textContent=d.priceReason||'';
+  const kw=document.getElementById('ls-keywords-out');
+  kw.innerHTML=(d.keywords||[]).map(k=>`<span style="background:var(--bg4);border:1px solid var(--border);border-radius:20px;padding:3px 10px;font-size:11px;color:var(--accent)">${k}</span>`).join('');
+  document.getElementById('ls-result').style.display='block';
+  document.getElementById('ls-result').scrollIntoView({behavior:'smooth'});
+}
+function lsCopy(id){
+  const text=document.getElementById(id).textContent;
+  navigator.clipboard.writeText(text).then(()=>{
+    const btn=event.target;const orig=btn.textContent;btn.textContent='コピー済み';
+    setTimeout(()=>btn.textContent=orig,1500);
+  });
 }
 
 Object.assign(window,{
@@ -2762,6 +2901,8 @@ Object.assign(window,{
   toggle1Yen,openNewListing,onNlInventoryChange,onNlPlatformChange,onNlPriceChange,
   openSellListing,onSlCalc,openListingSt,setListingSt,delListing,setSalesFilter,
   cancelListing,relistListing,openEditListing,onElCalc,openSellEdit,migrateSoldListings,
+  lsPopulateItems,lsGenerate,lsCopy,
+  addBunsaiRow,calcBunsai,applyBunsai,filterBunsaiKw,
 });
 
 // ============================================================
